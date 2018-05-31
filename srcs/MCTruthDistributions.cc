@@ -109,6 +109,7 @@ int main( int argc, char ** argv ) {
 
         
         for ( auto& multPair: MultiplicityGen ) multPair.second = 0;
+        for ( auto& multPair: MultiplicityG4 ) multPair.second = 0;
         
         std::cout << "Processing "
                   << "Run " << ev.eventAuxiliary().run() << ", "
@@ -116,6 +117,7 @@ int main( int argc, char ** argv ) {
 
         auto const& MCTruthHandle = ev.getValidHandle< std::vector< simb::MCTruth > >( MCTruthTag );
         auto const& MCTruthObjs = *MCTruthHandle;
+        // Find the MCParticles produced by LArG4 and associated to the MCTruth
         art::FindMany< simb::MCParticle, sim::GeneratedParticleInfo > G4MCParticlesAssn( MCTruthHandle, ev, MCParticleTag );
 
         // std::map< int, double > LeadingMomentum;
@@ -155,6 +157,7 @@ int main( int argc, char ** argv ) {
                
             } // Loop over MCParticles for each MCTruth
             
+            // Find all the MCParticles associated to the MCTruth object
             std::vector< simb::MCParticle const* > const& G4MCParticles = G4MCParticlesAssn.at( iMCTruth );
             
             for ( size_t iMCParticle = 0; iMCParticle < G4MCParticles.size(); ++iMCParticle ) {
@@ -175,7 +178,7 @@ int main( int argc, char ** argv ) {
                     MultiplicityG4[0]++;
 
                 }
-            }
+            } // Loop over MCParticles
         } // Loop over MCTruth 
 
         /* for ( std::map< int, int >::iterator it = MultiplicityGen.begin(); it != MultiplicityGen.end(); ++it ) {
