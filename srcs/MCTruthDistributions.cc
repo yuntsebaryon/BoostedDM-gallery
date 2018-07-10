@@ -159,6 +159,7 @@ int main( int argc, char ** argv ) {
             
             // Find all the MCParticles associated to the MCTruth object
             std::vector< simb::MCParticle const* > const& G4MCParticles = G4MCParticlesAssn.at( iMCTruth );
+            // std::vector< sim::GeneratedParticleInfo const* > const& G4MCParticleInfo = G4MCParticlesAssn.data( iMCTruth );
             
             for ( size_t iMCParticle = 0; iMCParticle < G4MCParticles.size(); ++iMCParticle ) {
                 int pdgCode = G4MCParticles[iMCParticle]->PdgCode();

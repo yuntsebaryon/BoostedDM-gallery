@@ -29,6 +29,9 @@ LDFLAGS=$$(root-config --libs) \
 MCTruthDistributions: MCTruthDistributions.cc
 	@$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -o $@ $<
 
-all: MCTruthDistributions
+MCParticleDistributions: MCParticleDistributions.cc
+	@$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -o $@ $<
 
-clean: rm *.o MCTruthDistributions
+all: MCTruthDistributions MCParticleDistributions
+
+clean: rm *.o MCTruthDistributions MCParticleDistributions
