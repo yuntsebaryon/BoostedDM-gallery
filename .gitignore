@@ -2,3 +2,4 @@
 *.log
 *.root
 *MCTruthDistributions
+*MCParticleDistributions
