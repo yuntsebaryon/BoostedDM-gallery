@@ -53,11 +53,11 @@ void ResetCounters( CounterMap_t& Multiplicity, KinematicMap_t& Px, KinematicMap
     for ( size_t iType = 0; iType < ParticleTypes.size(); ++iType ) {
         int type = ParticleTypes[iType];
         Multiplicity[type] = 0;
-        Px[type].resize( 10, 0. );
-        Py[type].resize( 10, 0. );
-        Pz[type].resize( 10, 0. );
-        P[type].resize( 10, 0. );
-        E[type].resize( 10, 0. );
+        Px[type].clear();
+        Py[type].clear();
+        Pz[type].clear();
+        P[type].clear();
+        E[type].clear();
     }
 }
 
