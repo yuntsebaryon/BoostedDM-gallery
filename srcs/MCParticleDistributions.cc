@@ -66,7 +66,7 @@ void InitTree( TTree* pTree, CounterMap_t& Multiplicity, KinematicMap_t& Px, Kin
     
     ResetCounters( Multiplicity, Px, Py, Pz, P, E );
 
-    pTree->Branch( "nParticles", &Multiplicity[0], "nParticle/i" );
+    pTree->Branch( "nParticles", &Multiplicity[0], "nParticles/i" );
     pTree->Branch( "nProtons", &Multiplicity[2212], "nProtons/i" );
     pTree->Branch( "nNeutrons", &Multiplicity[2112], "nNeutrons/i" );
     pTree->Branch( "nPions", &Multiplicity[211], "nPions/i" );
