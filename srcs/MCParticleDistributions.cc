@@ -21,6 +21,7 @@
 
 // LArSoft, nutools includes
 #include "nusimdata/SimulationBase/MCTruth.h"
+#include "nusimdata/SimulationBase/MCNeutrino.h"
 #include "nusimdata/SimulationBase/MCParticle.h"
 #include "lardataobj/Simulation/GeneratedParticleInfo.h"
 
@@ -75,7 +76,7 @@ void InitTree( TTree* pTree, CounterMap_t& Multiplicity, KinematicMap_t& Px, Kin
     pTree->Branch( "nAr40", &Multiplicity[1000180400], "nAr40/i" );
     pTree->Branch( "nAr39", &Multiplicity[1000180390], "nAr39/i" );
     pTree->Branch( "nCl39", &Multiplicity[1000170390], "nCl39/i" );
-    pTree->Branch( "nDMs", &Multiplicity[2000010000], "nDMs/i" );
+    pTree->Branch( "nInDMs", &Multiplicity[2000010000], "nDMs/i" );
     pTree->Branch( "nGENIE", &Multiplicity[2000000000], "nGENIE/i" );
     pTree->Branch( "ProtonPx", &Px[2212] );
     pTree->Branch( "NeutronPx", &Px[2112] );
@@ -86,7 +87,7 @@ void InitTree( TTree* pTree, CounterMap_t& Multiplicity, KinematicMap_t& Px, Kin
     pTree->Branch( "Ar40Px", &Px[1000180400] );
     pTree->Branch( "Ar39Px", &Px[1000180390] );
     pTree->Branch( "Cl39Px", &Px[1000170390] );
-    pTree->Branch( "DMPx", &Px[2000010000] );
+    pTree->Branch( "InDMPx", &Px[2000010000] );
     pTree->Branch( "GENIEPx", &Px[2000000000] );
     pTree->Branch( "ProtonPy", &Py[2212] );
     pTree->Branch( "NeutronPy", &Py[2112] );
@@ -97,7 +98,7 @@ void InitTree( TTree* pTree, CounterMap_t& Multiplicity, KinematicMap_t& Px, Kin
     pTree->Branch( "Ar40Py", &Py[1000180400] );
     pTree->Branch( "Ar39Py", &Py[1000180390] );
     pTree->Branch( "Cl39Py", &Py[1000170390] );
-    pTree->Branch( "DMPy", &Py[2000010000] );
+    pTree->Branch( "InDMPy", &Py[2000010000] );
     pTree->Branch( "GENIEPy", &Py[2000000000] );
     pTree->Branch( "ProtonPz", &Pz[2212] );
     pTree->Branch( "NeutronPz", &Pz[2112] );
@@ -108,7 +109,7 @@ void InitTree( TTree* pTree, CounterMap_t& Multiplicity, KinematicMap_t& Px, Kin
     pTree->Branch( "Ar40Pz", &Pz[1000180400] );
     pTree->Branch( "Ar39Pz", &Pz[1000180390] );
     pTree->Branch( "Cl39Pz", &Pz[1000170390] );
-    pTree->Branch( "DMPz", &Pz[2000010000] );
+    pTree->Branch( "InDMPz", &Pz[2000010000] );
     pTree->Branch( "GENIEPz", &Pz[2000000000] );
     pTree->Branch( "ProtonP", &P[2212] );
     pTree->Branch( "NeutronP", &P[2112] );
@@ -119,7 +120,7 @@ void InitTree( TTree* pTree, CounterMap_t& Multiplicity, KinematicMap_t& Px, Kin
     pTree->Branch( "Ar40P", &P[1000180400] );
     pTree->Branch( "Ar39P", &P[1000180390] );
     pTree->Branch( "Cl39P", &P[1000170390] );
-    pTree->Branch( "DMP", &P[2000010000] );
+    pTree->Branch( "InDMP", &P[2000010000] );
     pTree->Branch( "GENIEP", &P[2000000000] );
     pTree->Branch( "ProtonE", &E[2212] );
     pTree->Branch( "NeutronE", &E[2112] );
@@ -130,7 +131,7 @@ void InitTree( TTree* pTree, CounterMap_t& Multiplicity, KinematicMap_t& Px, Kin
     pTree->Branch( "Ar40E", &E[1000180400] );
     pTree->Branch( "Ar39E", &E[1000180390] );
     pTree->Branch( "Cl39E", &E[1000170390] );
-    pTree->Branch( "DME", &E[2000010000] );
+    pTree->Branch( "InDME", &E[2000010000] );
     pTree->Branch( "GENIEE", &E[2000000000] );
 }
 
@@ -173,10 +174,21 @@ int main( int argc, char ** argv ) {
 
         for ( size_t iMCTruth = 0; iMCTruth < MCTruthObjs.size(); ++iMCTruth ) {
 
-            // simb::MCTruth MCTruthObj = MCTruthObjs[iMCTruth];
+            simb::MCTruth MCTruthObj = MCTruthObjs[iMCTruth];
             // int nParticles = MCTruthObj.NParticles();
             
-            // Find all the MCParticles associated to the MCTruth object
+            // The incident DM particle is stored in the neutrino container in the MCTruth
+            simb::MCNeutrino const& InDMObj = MCTruthObj.GetNeutrino();
+            simb::MCParticle const& InDM    = InDMObj.Nu();
+            Multiplicity[2000010000] = 1;
+            auto& InDMPx = Px[2000010000]; auto& InDMPy = Py[2000010000]; auto& InDMPz = Pz[2000010000]; 
+            auto& InDMP = P[2000010000]; auto& InDME = E[2000010000];
+            InDMPx.resize( 1, 0. ); InDMPy.resize( 1, 0. ); InDMPz.resize( 1, 0. );
+            InDMP.resize( 1, 0. ); InDME.resize( 1, 0. );
+            InDMPx[0] = InDM.Px(); InDMPy[0] = InDM.Py(); InDMPz[0] = InDM.Pz();
+            InDMP[0] = InDM.P(); InDME[0] = InDM.E();
+            
+            // Find all the (stable final state) MCParticles associated to the MCTruth object
             std::vector< simb::MCParticle const* > const& G4MCParticles = G4MCParticlesAssn.at( iMCTruth );
             // std::vector< sim::GeneratedParticleInfo const* > const& G4MCParticleInfo = G4MCParticlesAssn.data( iMCTruth );
             
