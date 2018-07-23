@@ -24,12 +24,12 @@
 #include "nusimdata/SimulationBase/MCParticle.h"
 #include "lardataobj/Simulation/GeneratedParticleInfo.h"
 
-  
+
 using CounterMap_t = std::map< int, unsigned int >;
 using KinematicMap_t = std::map< int, std::vector< double > >;
 
 void SetParticleTypes( std::vector< int >& ParticleTypes ) {
-    
+
     ParticleTypes.push_back( 0 );  // All particles, including visible and invisible, but not GENIE artifacts, nor DMs, Ar40, Ar39, Cl39.
     ParticleTypes.push_back( 2212 );  // protons
     ParticleTypes.push_back( 2112 );  // neutrons
@@ -49,7 +49,7 @@ void ResetCounters( CounterMap_t& Multiplicity, KinematicMap_t& Px, KinematicMap
 
     std::vector< int > ParticleTypes;
     SetParticleTypes( ParticleTypes );
-    
+
     for ( size_t iType = 0; iType < ParticleTypes.size(); ++iType ) {
         int type = ParticleTypes[iType];
         Multiplicity[type] = 0;
@@ -61,10 +61,14 @@ void ResetCounters( CounterMap_t& Multiplicity, KinematicMap_t& Px, KinematicMap
     }
 }
 
-void InitTree( TTree* pTree, CounterMap_t& Multiplicity, KinematicMap_t& Px, KinematicMap_t& Py, KinematicMap_t& Pz, KinematicMap_t& P, KinematicMap_t& E ) {
-    
+void InitTree( TTree* pTree, CounterMap_t& Multiplicity, KinematicMap_t& Px, KinematicMap_t& Py, KinematicMap_t& Pz, KinematicMap_t& P, KinematicMap_t& E, double& EventPx, double& EventPy, double& EventPz, double& EventE ) {
+
     ResetCounters( Multiplicity, Px, Py, Pz, P, E );
 
+    pTree->Branch( "EventPx", &EventPx );
+    pTree->Branch( "EventPy", &EventPy );
+    pTree->Branch( "EventPz", &EventPz );
+    pTree->Branch( "EventE", &EventE );
     pTree->Branch( "nParticles", &Multiplicity[0], "nParticle/i" );
     pTree->Branch( "nProtons", &Multiplicity[2212], "nProtons/i" );
     pTree->Branch( "nNeutrons", &Multiplicity[2112], "nNeutrons/i" );
@@ -145,20 +149,25 @@ int main( int argc, char ** argv ) {
     art::InputTag MCTruthTag { GenLabel };
     art::InputTag MCParticleTag { G4Label };
 
-    TFile *fOut = new TFile( "MCParticleDistributions.root", "RECREATE" );
+    TFile *fOut = new TFile( "MCParticleDistributionsTEST.root", "RECREATE" );
     TTree *fTree = new TTree( "MCParticles", "Primary MC Particles" );
-   
+
     CounterMap_t Multiplicity;
     KinematicMap_t Px, Py, Pz, P, E;
-    InitTree( fTree, Multiplicity, Px, Py, Pz, P, E );
+    double EventPx, EventPy, EventPz, EventE;
+    InitTree( fTree, Multiplicity, Px, Py, Pz, P, E, EventPx, EventPy, EventPz, EventE );
 
-    
+
     for ( gallery::Event ev( Filenames ); !ev.atEnd(); ev.next() ) {
 
-        
+
         // for ( auto& multPair: Multiplicity ) multPair.second = 0;
         ResetCounters( Multiplicity, Px, Py, Pz, P, E );
-        
+        EventPx = 0;
+        EventPy = 0;
+        EventPz = 0;
+        EventE = 0;
+
         std::cout << "Processing "
                   << "Run " << ev.eventAuxiliary().run() << ", "
                   << "Event " << ev.eventAuxiliary().event() << std::endl;
@@ -170,21 +179,27 @@ int main( int argc, char ** argv ) {
 
         // std::map< int, double > LeadingMomentum;
         // std::map< int, double > LeadingEnergy;
-
         for ( size_t iMCTruth = 0; iMCTruth < MCTruthObjs.size(); ++iMCTruth ) {
 
             // simb::MCTruth MCTruthObj = MCTruthObjs[iMCTruth];
             // int nParticles = MCTruthObj.NParticles();
-            
+
             // Find all the MCParticles associated to the MCTruth object
             std::vector< simb::MCParticle const* > const& G4MCParticles = G4MCParticlesAssn.at( iMCTruth );
             // std::vector< sim::GeneratedParticleInfo const* > const& G4MCParticleInfo = G4MCParticlesAssn.data( iMCTruth );
-            
+
             for ( size_t iMCParticle = 0; iMCParticle < G4MCParticles.size(); ++iMCParticle ) {
                 const simb::MCParticle* thisMCParticle = G4MCParticles[iMCParticle];
                 int pdgCode = thisMCParticle->PdgCode();
                 auto& nAllParticles = Multiplicity[0];
-                
+                // ------------------------------------------------------------------------
+                if ( abs(pdgCode) == 2212 || abs(pdgCode) == 2112 || abs(pdgCode) == 211 || abs(pdgCode) == 111 || abs(pdgCode) == 300 || abs(pdgCode) == 3000 ) {
+                    EventPx += thisMCParticle->Px();
+                    EventPy += thisMCParticle->Py();
+                    EventPz += thisMCParticle->Pz();
+                    EventE += thisMCParticle->E();
+                }
+                // ------------------------------------------------------------------------
                 if ( pdgCode > 2000000000 && pdgCode != 2000010000 ) {
                     auto& nGENIE = Multiplicity[2000000000];
                     auto& GENIEPx = Px[2000000000];
@@ -202,8 +217,8 @@ int main( int argc, char ** argv ) {
                     auto& GENIEE = E[2000000000];
                     if ( GENIEE.size() <= nGENIE ) GENIEE.resize( nGENIE + 1, 0. );
                     GENIEE[nGENIE] = thisMCParticle->E();
-                    
-                    ++nGENIE;               
+
+                    ++nGENIE;
                 } else if ( abs(pdgCode) > 300 && abs(pdgCode) < 400 ) {
                     auto& nMesons = Multiplicity[300];
                     auto& MesonPx = Px[300];
@@ -260,13 +275,12 @@ int main( int argc, char ** argv ) {
                     if ( ParticleE.size() <= nParticles ) ParticleE.resize( nParticles + 1, 0. );
                     ParticleE[nParticles] = thisMCParticle->E();
                     ++nParticles;
-                    if ( pdgCode == 2000010000 || pdgCode == 1000180400 || pdgCode == 1000180390 || pdgCode == 1000170390 ) continue; 
+                    if ( pdgCode == 2000010000 || pdgCode == 1000180400 || pdgCode == 1000180390 || pdgCode == 1000170390 ) continue;
                     ++nAllParticles;
 
                 }
             } // Loop over MCParticles
-        } // Loop over MCTruth 
-
+        } // Loop over MCTruth
         /* for ( std::map< int, int >::iterator it = MultiplicityGen.begin(); it != MultiplicityGen.end(); ++it ) {
             hMultiplicity[it->first]->Fill( it->second );
             if ( LeadingMomentum[it->first] > 0. ) hLeadingMomentum[it->first]->Fill( LeadingMomentum[it->first] );
