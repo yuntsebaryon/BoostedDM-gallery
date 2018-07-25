@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <cmath>
 
 //some ROOT includes
 #include "TInterpreter.h"
@@ -21,6 +22,7 @@
 
 // LArSoft, nutools includes
 #include "nusimdata/SimulationBase/MCTruth.h"
+#include "nusimdata/SimulationBase/MCNeutrino.h"
 #include "nusimdata/SimulationBase/MCParticle.h"
 #include "lardataobj/Simulation/GeneratedParticleInfo.h"
 
@@ -61,7 +63,7 @@ void ResetCounters( CounterMap_t& Multiplicity, KinematicMap_t& Px, KinematicMap
     }
 }
 
-void InitTree( TTree* pTree, CounterMap_t& Multiplicity, KinematicMap_t& Px, KinematicMap_t& Py, KinematicMap_t& Pz, KinematicMap_t& P, KinematicMap_t& E, double& EventPx, double& EventPy, double& EventPz, double& EventE ) {
+void InitTree( TTree* pTree, CounterMap_t& Multiplicity, KinematicMap_t& Px, KinematicMap_t& Py, KinematicMap_t& Pz, KinematicMap_t& P, KinematicMap_t& E, double& EventPx, double& EventPy, double& EventPz, double& EventE, double& angle ) {
 
     ResetCounters( Multiplicity, Px, Py, Pz, P, E );
 
@@ -69,7 +71,8 @@ void InitTree( TTree* pTree, CounterMap_t& Multiplicity, KinematicMap_t& Px, Kin
     pTree->Branch( "EventPy", &EventPy );
     pTree->Branch( "EventPz", &EventPz );
     pTree->Branch( "EventE", &EventE );
-    pTree->Branch( "nParticles", &Multiplicity[0], "nParticle/i" );
+    pTree->Branch( "Angle", &angle );
+    pTree->Branch( "nParticles", &Multiplicity[0], "nParticles/i" );
     pTree->Branch( "nProtons", &Multiplicity[2212], "nProtons/i" );
     pTree->Branch( "nNeutrons", &Multiplicity[2112], "nNeutrons/i" );
     pTree->Branch( "nPions", &Multiplicity[211], "nPions/i" );
@@ -79,7 +82,7 @@ void InitTree( TTree* pTree, CounterMap_t& Multiplicity, KinematicMap_t& Px, Kin
     pTree->Branch( "nAr40", &Multiplicity[1000180400], "nAr40/i" );
     pTree->Branch( "nAr39", &Multiplicity[1000180390], "nAr39/i" );
     pTree->Branch( "nCl39", &Multiplicity[1000170390], "nCl39/i" );
-    pTree->Branch( "nDMs", &Multiplicity[2000010000], "nDMs/i" );
+    pTree->Branch( "nInDMs", &Multiplicity[2000010000], "nDMs/i" );
     pTree->Branch( "nGENIE", &Multiplicity[2000000000], "nGENIE/i" );
     pTree->Branch( "ProtonPx", &Px[2212] );
     pTree->Branch( "NeutronPx", &Px[2112] );
@@ -90,7 +93,7 @@ void InitTree( TTree* pTree, CounterMap_t& Multiplicity, KinematicMap_t& Px, Kin
     pTree->Branch( "Ar40Px", &Px[1000180400] );
     pTree->Branch( "Ar39Px", &Px[1000180390] );
     pTree->Branch( "Cl39Px", &Px[1000170390] );
-    pTree->Branch( "DMPx", &Px[2000010000] );
+    pTree->Branch( "InDMPx", &Px[2000010000] );
     pTree->Branch( "GENIEPx", &Px[2000000000] );
     pTree->Branch( "ProtonPy", &Py[2212] );
     pTree->Branch( "NeutronPy", &Py[2112] );
@@ -101,7 +104,7 @@ void InitTree( TTree* pTree, CounterMap_t& Multiplicity, KinematicMap_t& Px, Kin
     pTree->Branch( "Ar40Py", &Py[1000180400] );
     pTree->Branch( "Ar39Py", &Py[1000180390] );
     pTree->Branch( "Cl39Py", &Py[1000170390] );
-    pTree->Branch( "DMPy", &Py[2000010000] );
+    pTree->Branch( "InDMPy", &Py[2000010000] );
     pTree->Branch( "GENIEPy", &Py[2000000000] );
     pTree->Branch( "ProtonPz", &Pz[2212] );
     pTree->Branch( "NeutronPz", &Pz[2112] );
@@ -112,7 +115,7 @@ void InitTree( TTree* pTree, CounterMap_t& Multiplicity, KinematicMap_t& Px, Kin
     pTree->Branch( "Ar40Pz", &Pz[1000180400] );
     pTree->Branch( "Ar39Pz", &Pz[1000180390] );
     pTree->Branch( "Cl39Pz", &Pz[1000170390] );
-    pTree->Branch( "DMPz", &Pz[2000010000] );
+    pTree->Branch( "InDMPz", &Pz[2000010000] );
     pTree->Branch( "GENIEPz", &Pz[2000000000] );
     pTree->Branch( "ProtonP", &P[2212] );
     pTree->Branch( "NeutronP", &P[2112] );
@@ -123,7 +126,7 @@ void InitTree( TTree* pTree, CounterMap_t& Multiplicity, KinematicMap_t& Px, Kin
     pTree->Branch( "Ar40P", &P[1000180400] );
     pTree->Branch( "Ar39P", &P[1000180390] );
     pTree->Branch( "Cl39P", &P[1000170390] );
-    pTree->Branch( "DMP", &P[2000010000] );
+    pTree->Branch( "InDMP", &P[2000010000] );
     pTree->Branch( "GENIEP", &P[2000000000] );
     pTree->Branch( "ProtonE", &E[2212] );
     pTree->Branch( "NeutronE", &E[2112] );
@@ -134,7 +137,7 @@ void InitTree( TTree* pTree, CounterMap_t& Multiplicity, KinematicMap_t& Px, Kin
     pTree->Branch( "Ar40E", &E[1000180400] );
     pTree->Branch( "Ar39E", &E[1000180390] );
     pTree->Branch( "Cl39E", &E[1000170390] );
-    pTree->Branch( "DME", &E[2000010000] );
+    pTree->Branch( "InDME", &E[2000010000] );
     pTree->Branch( "GENIEE", &E[2000000000] );
 }
 
@@ -154,12 +157,11 @@ int main( int argc, char ** argv ) {
 
     CounterMap_t Multiplicity;
     KinematicMap_t Px, Py, Pz, P, E;
-    double EventPx, EventPy, EventPz, EventE;
-    InitTree( fTree, Multiplicity, Px, Py, Pz, P, E, EventPx, EventPy, EventPz, EventE );
+    double EventPx, EventPy, EventPz, EventE, angle, counter = 0, summed = 0;
+    InitTree( fTree, Multiplicity, Px, Py, Pz, P, E, EventPx, EventPy, EventPz, EventE, angle );
 
 
     for ( gallery::Event ev( Filenames ); !ev.atEnd(); ev.next() ) {
-
 
         // for ( auto& multPair: Multiplicity ) multPair.second = 0;
         ResetCounters( Multiplicity, Px, Py, Pz, P, E );
@@ -167,6 +169,7 @@ int main( int argc, char ** argv ) {
         EventPy = 0;
         EventPz = 0;
         EventE = 0;
+        angle = 0;
 
         std::cout << "Processing "
                   << "Run " << ev.eventAuxiliary().run() << ", "
@@ -181,25 +184,54 @@ int main( int argc, char ** argv ) {
         // std::map< int, double > LeadingEnergy;
         for ( size_t iMCTruth = 0; iMCTruth < MCTruthObjs.size(); ++iMCTruth ) {
 
-            // simb::MCTruth MCTruthObj = MCTruthObjs[iMCTruth];
+            simb::MCTruth MCTruthObj = MCTruthObjs[iMCTruth];
             // int nParticles = MCTruthObj.NParticles();
 
-            // Find all the MCParticles associated to the MCTruth object
+            // The incident DM particle is stored in the neutrino container in the MCTruth
+            simb::MCNeutrino const& InDMObj = MCTruthObj.GetNeutrino();
+            simb::MCParticle const& InDM    = InDMObj.Nu();
+            Multiplicity[2000010000] = 1;
+            auto& InDMPx = Px[2000010000]; auto& InDMPy = Py[2000010000]; auto& InDMPz = Pz[2000010000];
+            auto& InDMP = P[2000010000]; auto& InDME = E[2000010000];
+            InDMPx.resize( 1, 0. ); InDMPy.resize( 1, 0. ); InDMPz.resize( 1, 0. );
+            InDMP.resize( 1, 0. ); InDME.resize( 1, 0. );
+            InDMPx[0] = InDM.Px(); InDMPy[0] = InDM.Py(); InDMPz[0] = InDM.Pz();
+            InDMP[0] = InDM.P(); InDME[0] = InDM.E();
+
+            // Find all the (stable final state) MCParticles associated to the MCTruth object
             std::vector< simb::MCParticle const* > const& G4MCParticles = G4MCParticlesAssn.at( iMCTruth );
             // std::vector< sim::GeneratedParticleInfo const* > const& G4MCParticleInfo = G4MCParticlesAssn.data( iMCTruth );
+
+            // keep track of leading momentum particle over all MCParticles to calculate angle with incident DM later
+            // double leading_index;
+            double leading_P = 0;
+            double leading_Px = 0;
+            double leading_Py = 0;
+            double leading_Pz = 0;
+            // const simb::MCParticle* leading_particle;
 
             for ( size_t iMCParticle = 0; iMCParticle < G4MCParticles.size(); ++iMCParticle ) {
                 const simb::MCParticle* thisMCParticle = G4MCParticles[iMCParticle];
                 int pdgCode = thisMCParticle->PdgCode();
                 auto& nAllParticles = Multiplicity[0];
-                // ------------------------------------------------------------------------
+
+                // if the particle is proton, neutron, charged pion, pi0, meson, or baryon, add P and E to running sum
                 if ( abs(pdgCode) == 2212 || abs(pdgCode) == 2112 || abs(pdgCode) == 211 || abs(pdgCode) == 111 || abs(pdgCode) == 300 || abs(pdgCode) == 3000 ) {
                     EventPx += thisMCParticle->Px();
                     EventPy += thisMCParticle->Py();
                     EventPz += thisMCParticle->Pz();
                     EventE += thisMCParticle->E();
+
+                    // check to see if this MCParticle's P is leading
+                    if (thisMCParticle->P() > leading_P) {
+                      leading_P = thisMCParticle->P();
+                      leading_Px = thisMCParticle->Px();
+                      leading_Py = thisMCParticle->Py();
+                      leading_Pz = thisMCParticle->Pz();
+                      // leading_particle = thisMCParticle;
+                    }
                 }
-                // ------------------------------------------------------------------------
+
                 if ( pdgCode > 2000000000 && pdgCode != 2000010000 ) {
                     auto& nGENIE = Multiplicity[2000000000];
                     auto& GENIEPx = Px[2000000000];
@@ -280,6 +312,17 @@ int main( int argc, char ** argv ) {
 
                 }
             } // Loop over MCParticles
+
+            // now that we have leading particle, calculate angle between leading particle and incident DM
+            // but we only fill "Angle" if we have well-defined leading momentum modulus
+            // const simb::MCParticle* leading_particle = G4MCParticles[leading_index];
+            if (leading_P > 0) {
+              double numerator = leading_Px * InDM.Px() + leading_Py * InDM.Py() + leading_Pz * InDM.Pz();
+              double denominator = leading_P * InDM.P();
+              angle = acos(numerator/denominator);
+              summed += angle;
+              counter += 1;
+            }
         } // Loop over MCTruth
         /* for ( std::map< int, int >::iterator it = MultiplicityGen.begin(); it != MultiplicityGen.end(); ++it ) {
             hMultiplicity[it->first]->Fill( it->second );
@@ -288,6 +331,9 @@ int main( int argc, char ** argv ) {
         } */
         fTree->Fill();
     } // End of an event
+    std::cout << summed/10000 << std::endl;
+    std::cout << summed/counter << std::endl;
+    std::cout << counter << std::endl;
 
     fOut->Write();
     return 0;
