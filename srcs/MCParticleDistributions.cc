@@ -169,7 +169,9 @@ int main( int argc, char ** argv ) {
         EventPy = 0;
         EventPz = 0;
         EventE = 0;
-        angle = 0;
+        
+        // default value of angle is -1
+        angle = -1;
 
         std::cout << "Processing "
                   << "Run " << ev.eventAuxiliary().run() << ", "
