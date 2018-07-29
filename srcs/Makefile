@@ -26,12 +26,15 @@ LDFLAGS=$$(root-config --libs) \
         -L $(LARCOREOBJ_LIB) -l larcoreobj_SummaryData \
         -L $(LARDATAOBJ_LIB) -l lardataobj_RecoBase -l lardataobj_MCBase -l lardataobj_RawData -l lardataobj_OpticalDetectorData -l lardataobj_AnalysisBase
 
+all: MCTruthDistributions MCParticleDistributions CheckMCTruthMCParticle
+
 MCTruthDistributions: MCTruthDistributions.cc
 	@$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -o $@ $<
 
 MCParticleDistributions: MCParticleDistributions.cc
 	@$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -o $@ $<
 
-all: MCTruthDistributions MCParticleDistributions
+CheckMCTruthMCParticle: CheckMCTruthMCParticle.cc
+	@$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -o $@ $<
 
-clean: rm *.o MCTruthDistributions MCParticleDistributions
+clean: rm *.o MCTruthDistributions MCParticleDistributions CheckMCTruthMCParticle
