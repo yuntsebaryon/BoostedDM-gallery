@@ -3,3 +3,4 @@
 *.root
 *MCTruthDistributions
 *MCParticleDistributions
+*CheckMCTruthMCParticle
