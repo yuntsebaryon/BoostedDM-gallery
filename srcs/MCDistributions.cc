@@ -66,11 +66,11 @@ void SetParticleTypes( std::vector< int >& ParticleTypes ) {
     ParticleTypes.push_back( -2000010000 );  // Incident dark matter
     ParticleTypes.push_back( 2000010000 ); // Outgoing dark matter
     ParticleTypes.push_back( 2000000000 );  // GENIE artifacts
-    ParticleTypes.push_back( 3000000000 ); // All the visible particles and neutrons ( not GENIE artifacts, nor DMs, Ar40, Ar39, Cl39 )
-    ParticleTypes.push_back( 3000000001 ); // All the visible particles but not neutrons
-    ParticleTypes.push_back( 4000000000 ); // Leading particle among all the visible particles and neutrons
-    ParticleTypes.push_back( 4000000001 ); // Leading particle among all the visible particles but not neutrons
-    ParticleTypes.push_back( 4000000002 ); // Leading proton
+    ParticleTypes.push_back( 2000000400 ); // All the visible particles and neutrons ( not GENIE artifacts, nor DMs, Ar40, Ar39, Cl39 )
+    ParticleTypes.push_back( 2000000401 ); // All the visible particles but not neutrons
+    ParticleTypes.push_back( 2000000410 ); // Leading particle among all the visible particles and neutrons
+    ParticleTypes.push_back( 2000000411 ); // Leading particle among all the visible particles but not neutrons
+    ParticleTypes.push_back( 2000000412 ); // Leading proton
 }
 
 void ResetCounters( CounterMap_t& Multiplicity, KinematicMap_t& Px, KinematicMap_t& Py, KinematicMap_t& Pz, KinematicMap_t& P, KinematicMap_t& E, KinematicMap_t& Angle ) {
@@ -125,11 +125,11 @@ void InitTree( TTree* pTree, CounterMap_t& Multiplicity, KinematicMap_t& Px, Kin
     pTree->Branch( "EventP", &P[0] );
     pTree->Branch( "EventE", &E[0] );
     pTree->Branch( "EventAngle", &Angle[0] );
-    pTree->Branch( "VisiblePx", &Px[3000000000] );
-    pTree->Branch( "VisibleNoNPx", &Px[3000000001] );
-    pTree->Branch( "LeadingParticlePx", &Px[4000000000] );
-    pTree->Branch( "LeadingParticleNoNPx", &Px[4000000001] );
-    pTree->Branch( "LeadingProtonPx", &Px[4000000002] );
+    pTree->Branch( "VisiblePx", &Px[2000000400] );
+    pTree->Branch( "VisibleNoNPx", &Px[2000000401] );
+    pTree->Branch( "LeadingParticlePx", &Px[2000000410] );
+    pTree->Branch( "LeadingParticleNoNPx", &Px[2000000411] );
+    pTree->Branch( "LeadingProtonPx", &Px[2000000412] );
     
     // Event-wide particle multiplicity
     pTree->Branch( "nParticles", &Multiplicity[0], "nParticles/i" );
@@ -244,8 +244,8 @@ int main( int argc, char ** argv ) {
         // Access the element of the map directly
         auto& nAllParticles = Multiplicity[0];
         auto& nInDM = Multiplicity[-2000010000];
-        auto& nVisible = Multiplicity[3000000000];
-        auto& nVisibleNoN = Multiplicity[3000000001];
+        auto& nVisible = Multiplicity[2000000400];
+        auto& nVisibleNoN = Multiplicity[2000000401];
         
         // Initialize the incident DM particle.
         // Currently allow only one DM-Argon interaction in an event
@@ -306,7 +306,7 @@ int main( int argc, char ** argv ) {
             InDMP[0] = InDM.P(); InDME[0] = InDM.E(); InDMAngle[0] = 0.;
 
             // Now look for the initial argon 4-momentum
-            for ( size_t iMCParticle; iMCParticle < MCTruthObj.NParticles(); ++iMCParticle ) {
+            for ( size_t iMCParticle = 0; iMCParticle < MCTruthObj.NParticles(); ++iMCParticle ) {
                 
                 const simb::MCParticle& thisMCParticle = MCTruthObj.GetParticle( iMCParticle );
                 if ( thisMCParticle.StatusCode() == 1 ) continue;
@@ -330,13 +330,13 @@ int main( int argc, char ** argv ) {
                 int statusCode = thisMCParticle->StatusCode();
 
                 if ( statusCode != 1 ) {
-                    std::cout << "MCParticle[" << thisParticle->TrackId() << "] has the status code " << statusCode << "!" << std::endl;
+                    std::cout << "MCParticle[" << thisMCParticle->TrackId() << "] has the status code " << statusCode << "!" << std::endl;
                 }
                 
                 const auto Momentum = geo::vect::convertTo< Momentum4_t >( thisMCParticle->Momentum() );
                 Event += Momentum;
                 
-                if ( pdgCode > 2000000000 && pdgCode != 2000010000 ) {
+                if ( pdgCode > 2000000000 && pdgCode < 2000000301 ) {
 
                     if ( GENIEPx.size() <= nGENIE )
                         ResizeKinematics( GENIEPx, GENIEPy, GENIEPz, GENIEP, GENIEE, GENIEAngle, nGENIE + 1 );
