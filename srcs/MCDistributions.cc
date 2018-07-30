@@ -446,6 +446,19 @@ int main( int argc, char ** argv ) {
 
         } // Loop over MCTruth
 
+        // Fill the event-wide information
+        // TODO: finish the filling
+        Px[0][0] = Event.Px();
+        Py[0][0] = Event.Py();
+        Pz[0][0] = Event.Pz();
+        P[0][0]  = Event.P();
+        E[0][0]  = Event.E();
+        Px[2000000400][0] = Visible.Px();
+        Px[2000000401][0] = VisibleNoN.Px();
+        Px[2000000410][0] = LeadingParticle.Px();
+        Px[2000000411][0] = LeadingParticleNoN.Px();
+        Px[2000000412][0] = LeadingProton.Px();
+        
         fTree->Fill();
     } // End of an event
 
