@@ -348,7 +348,7 @@ int main( int argc, char ** argv ) {
                     ++nGENIE;
                     ++nAllParticles;
 
-                } else if ( abs(pdgCode) > 300 && abs(pdgCode) < 400 ) {
+                } else if ( ( abs(pdgCode) > 300 && abs(pdgCode) < 400 ) || abs(pdgCode) == 130 ) {
 
                     if ( MesonPx.size() <= nMesons ) 
                         ResizeKinematics( MesonPx, MesonPy, MesonPz, MesonP, MesonE, MesonAngle, nMesons + 1 );
