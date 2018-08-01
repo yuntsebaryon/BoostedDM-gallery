@@ -157,9 +157,8 @@ int main( int argc, char ** argv ) {
 
     CounterMap_t Multiplicity;
     KinematicMap_t Px, Py, Pz, P, E;
-    double EventPx, EventPy, EventPz, EventE, angle, counter = 0, summed = 0;
+    double EventPx, EventPy, EventPz, EventE, angle = -1.; // default value of angle is -1
     InitTree( fTree, Multiplicity, Px, Py, Pz, P, E, EventPx, EventPy, EventPz, EventE, angle );
-
 
     for ( gallery::Event ev( Filenames ); !ev.atEnd(); ev.next() ) {
 
@@ -169,9 +168,8 @@ int main( int argc, char ** argv ) {
         EventPy = 0;
         EventPz = 0;
         EventE = 0;
-        
-        // default value of angle is -1
-        angle = -1;
+
+        auto& nAllParticles = Multiplicity[0];
 
         std::cout << "Processing "
                   << "Run " << ev.eventAuxiliary().run() << ", "
@@ -182,8 +180,7 @@ int main( int argc, char ** argv ) {
         // Find the MCParticles produced by LArG4 and associated to the MCTruth
         art::FindMany< simb::MCParticle, sim::GeneratedParticleInfo > G4MCParticlesAssn( MCTruthHandle, ev, MCParticleTag );
 
-        // std::map< int, double > LeadingMomentum;
-        // std::map< int, double > LeadingEnergy;
+
         for ( size_t iMCTruth = 0; iMCTruth < MCTruthObjs.size(); ++iMCTruth ) {
 
             simb::MCTruth MCTruthObj = MCTruthObjs[iMCTruth];
@@ -210,12 +207,10 @@ int main( int argc, char ** argv ) {
             double leading_Px = 0;
             double leading_Py = 0;
             double leading_Pz = 0;
-            // const simb::MCParticle* leading_particle;
 
             for ( size_t iMCParticle = 0; iMCParticle < G4MCParticles.size(); ++iMCParticle ) {
                 const simb::MCParticle* thisMCParticle = G4MCParticles[iMCParticle];
                 int pdgCode = thisMCParticle->PdgCode();
-                auto& nAllParticles = Multiplicity[0];
 
                 // if the particle is proton, neutron, charged pion, pi0, meson, or baryon, add P and E to running sum
                 if ( abs(pdgCode) == 2212 || abs(pdgCode) == 2112 || abs(pdgCode) == 211 || abs(pdgCode) == 111 || abs(pdgCode) == 300 || abs(pdgCode) == 3000 ) {
@@ -230,7 +225,6 @@ int main( int argc, char ** argv ) {
                       leading_Px = thisMCParticle->Px();
                       leading_Py = thisMCParticle->Py();
                       leading_Pz = thisMCParticle->Pz();
-                      // leading_particle = thisMCParticle;
                     }
                 }
 
@@ -309,21 +303,19 @@ int main( int argc, char ** argv ) {
                     if ( ParticleE.size() <= nParticles ) ParticleE.resize( nParticles + 1, 0. );
                     ParticleE[nParticles] = thisMCParticle->E();
                     ++nParticles;
-                    if ( pdgCode == 2000010000 || pdgCode == 1000180400 || pdgCode == 1000180390 || pdgCode == 1000170390 ) continue;
+                    if ( pdgCode == 2000010000 || pdgCode == 1000180400 || pdgCode == 1000180390 || pdgCode == 1000170390 || (11 <= abs(pdgCode) && abs(pdgCode) <= 18) || abs(pdgCode) == 22 || abs(pdgCode) > 1000000000 || abs(pdgCode) == 130 ) continue;
                     ++nAllParticles;
 
                 }
+
             } // Loop over MCParticles
 
             // now that we have leading particle, calculate angle between leading particle and incident DM
             // but we only fill "Angle" if we have well-defined leading momentum modulus
-            // const simb::MCParticle* leading_particle = G4MCParticles[leading_index];
             if (leading_P > 0) {
               double numerator = leading_Px * InDM.Px() + leading_Py * InDM.Py() + leading_Pz * InDM.Pz();
               double denominator = leading_P * InDM.P();
               angle = acos(numerator/denominator);
-              summed += angle;
-              counter += 1;
             }
         } // Loop over MCTruth
         /* for ( std::map< int, int >::iterator it = MultiplicityGen.begin(); it != MultiplicityGen.end(); ++it ) {
@@ -333,9 +325,6 @@ int main( int argc, char ** argv ) {
         } */
         fTree->Fill();
     } // End of an event
-    std::cout << summed/10000 << std::endl;
-    std::cout << summed/counter << std::endl;
-    std::cout << counter << std::endl;
 
     fOut->Write();
     return 0;
