@@ -1,7 +1,7 @@
 /***
  * @file    MCDistributions.cc
  * @brief   Create a TTree filling with the 4-momenta of the initial and final state particles of the dark matter particle-argon interaction
- * @date    August 5, 2018
+ * @date    August 7, 2018
  * @author  Yun-Tse Tsai (yuntse@slac.stanford.edu), Dane Stocks (dstocks@stanford.edu)
  * @version v1.0
  *
@@ -145,44 +145,42 @@ void InitTree( TTree* pTree, CounterMap_t& Multiplicity, KinematicMap_t& Px, Kin
     pTree->Branch( "EventPz", &Pz[0] );
     pTree->Branch( "EventP", &P[0] );
     pTree->Branch( "EventE", &E[0] );
+    pTree->Branch( "EventAngle", &Angle[0] );
 
     pTree->Branch( "VisiblePx", &Px[2000000400] );
-    pTree->Branch( "VisibleNoNPx", &Px[2000000401] );
-    pTree->Branch( "LeadingParticlePx", &Px[2000000410] );
-    pTree->Branch( "LeadingParticleNoNPx", &Px[2000000411] );
-    pTree->Branch( "LeadingProtonPx", &Px[2000000412] );
-
     pTree->Branch( "VisiblePy", &Py[2000000400] );
-    pTree->Branch( "VisibleNoNPy", &Py[2000000401] );
-    pTree->Branch( "LeadingParticlePy", &Py[2000000410] );
-    pTree->Branch( "LeadingParticleNoNPy", &Py[2000000411] );
-    pTree->Branch( "LeadingProtonPy", &Py[2000000412] );
-
     pTree->Branch( "VisiblePz", &Pz[2000000400] );
-    pTree->Branch( "VisibleNoNPz", &Pz[2000000401] );
-    pTree->Branch( "LeadingParticlePz", &Pz[2000000410] );
-    pTree->Branch( "LeadingParticleNoNPz", &Pz[2000000411] );
-    pTree->Branch( "LeadingProtonPz", &Pz[2000000412] );
-
     pTree->Branch( "VisibleP", &P[2000000400] );
-    pTree->Branch( "VisibleNoNP", &P[2000000401] );
-    pTree->Branch( "LeadingParticleP", &P[2000000410] );
-    pTree->Branch( "LeadingParticleNoNP", &P[2000000411] );
-    pTree->Branch( "LeadingProtonP", &P[2000000412] );
-
     pTree->Branch( "VisibleE", &E[2000000400] );
-    pTree->Branch( "VisibleNoNE", &E[2000000401] );
-    pTree->Branch( "LeadingParticleE", &E[2000000410] );
-    pTree->Branch( "LeadingParticleNoNE", &E[2000000411] );
-    pTree->Branch( "LeadingProtonE", &E[2000000412] );
-
-    pTree->Branch( "EventAngle", &Angle[0] );
     pTree->Branch( "VisibleAngle", &Angle[2000000400] );
-    pTree->Branch( "VisibleNoNAngle", &Angle[2000000401] );
-    pTree->Branch( "LeadingParticleAngle", &Angle[2000000410] );
-    pTree->Branch( "LeadingParticleNoNAngle", &Angle[2000000411] );
-    pTree->Branch( "LeadingProtonAngle", &Angle[2000000412] );
 
+    pTree->Branch( "VisibleNoNPx", &Px[2000000401] );
+    pTree->Branch( "VisibleNoNPy", &Py[2000000401] );
+    pTree->Branch( "VisibleNoNPz", &Pz[2000000401] );
+    pTree->Branch( "VisibleNoNP", &P[2000000401] );
+    pTree->Branch( "VisibleNoNE", &E[2000000401] );
+    pTree->Branch( "VisibleNoNAngle", &Angle[2000000401] );
+
+    pTree->Branch( "LeadingParticlePx", &Px[2000000410] );
+    pTree->Branch( "LeadingParticlePy", &Py[2000000410] );
+    pTree->Branch( "LeadingParticlePz", &Pz[2000000410] );
+    pTree->Branch( "LeadingParticleP", &P[2000000410] );
+    pTree->Branch( "LeadingParticleE", &E[2000000410] );
+    pTree->Branch( "LeadingParticleAngle", &Angle[2000000410] );
+
+    pTree->Branch( "LeadingParticleNoNPx", &Px[2000000411] );
+    pTree->Branch( "LeadingParticleNoNPy", &Py[2000000411] );
+    pTree->Branch( "LeadingParticleNoNPz", &Pz[2000000411] );
+    pTree->Branch( "LeadingParticleNoNP", &P[2000000411] );
+    pTree->Branch( "LeadingParticleNoNE", &E[2000000411] );
+    pTree->Branch( "LeadingParticleNoNAngle", &Angle[2000000411] );
+
+    pTree->Branch( "LeadingProtonPx", &Px[2000000412] );
+    pTree->Branch( "LeadingProtonPy", &Py[2000000412] );
+    pTree->Branch( "LeadingProtonPz", &Pz[2000000412] );
+    pTree->Branch( "LeadingProtonP", &P[2000000412] );
+    pTree->Branch( "LeadingProtonE", &E[2000000412] );
+    pTree->Branch( "LeadingProtonAngle", &Angle[2000000412] );
 
     // Event-wide particle multiplicity
     pTree->Branch( "nParticles", &Multiplicity[0], "nParticles/i" );
@@ -255,6 +253,14 @@ void InitTree( TTree* pTree, CounterMap_t& Multiplicity, KinematicMap_t& Px, Kin
     pTree->Branch( "Cl39E", &E[1000170390] );
     pTree->Branch( "InDME", &E[-2000010000] );
     pTree->Branch( "GENIEE", &E[2000000000] );
+    pTree->Branch( "ProtonAngle", &Angle[2212] );
+    pTree->Branch( "NeutronAngle", &Angle[2112] );
+    pTree->Branch( "PionAngle", &Angle[211] );
+    pTree->Branch( "Pi0Angle", &Angle[111] );
+    pTree->Branch( "MesonAngle", &Angle[300] );
+    pTree->Branch( "BaryonAngle", &Angle[3000] );
+    pTree->Branch( "InDMAngle", &Angle[-2000010000] );
+    pTree->Branch( "GENIEAngle", &Angle[2000000000] );
 }
 
 
@@ -277,7 +283,6 @@ int main( int argc, char ** argv ) {
     int Mode, InteractionType, CCNC;
 
     InitTree( fTree, Multiplicity, Px, Py, Pz, P, E, Angle, EventOrigin, Mode, InteractionType, CCNC );
-
 
     for ( gallery::Event ev( Filenames ); !ev.atEnd(); ev.next() ) {
 
@@ -306,6 +311,26 @@ int main( int argc, char ** argv ) {
         auto& InDMP = P[-2000010000]; auto& InDME = E[-2000010000]; auto& InDMAngle = Angle[-2000010000];
         ResizeKinematics( InDMPx, InDMPy, InDMPz, InDMP, InDME, InDMAngle, 1 );
 
+        // Access event-wide variables directly for later use
+        auto& EventPx = Px[0]; auto& EventPy = Py[0]; auto& EventPz = Pz[0];
+        auto& EventP = P[0]; auto& EventE = E[0]; auto& EventAngle = Angle[0];
+
+        auto& VisiblePx = Px[2000000400]; auto& VisiblePy = Py[2000000400]; auto& VisiblePz = Pz[2000000400];
+        auto& VisibleP = P[2000000400]; auto& VisibleE = E[2000000400]; auto& VisibleAngle = Angle[2000000400];
+
+        auto& VisibleNoNPx = Px[2000000401]; auto& VisibleNoNPy = Py[2000000401]; auto& VisibleNoNPz = Pz[2000000401];
+        auto& VisibleNoNP = P[2000000401]; auto& VisibleNoNE = E[2000000401]; auto& VisibleNoNAngle = Angle[2000000401];
+
+        auto& LeadingParticlePx = Px[2000000410]; auto& LeadingParticlePy = Py[2000000410]; auto& LeadingParticlePz = Pz[2000000410];
+        auto& LeadingParticleP = P[2000000410]; auto& LeadingParticleE = E[2000000410]; auto& LeadingParticleAngle = Angle[2000000410];
+
+        auto& LeadingParticleNoNPx = Px[2000000411]; auto& LeadingParticleNoNPy = Py[2000000411]; auto& LeadingParticleNoNPz = Pz[2000000411];
+        auto& LeadingParticleNoNP = P[2000000411]; auto& LeadingParticleNoNE = E[2000000411]; auto& LeadingParticleNoNAngle = Angle[2000000411];
+
+        auto& LeadingProtonPx = Px[2000000412]; auto& LeadingProtonPy = Py[2000000412]; auto& LeadingProtonPz = Pz[2000000412];
+        auto& LeadingProtonP = P[2000000412]; auto& LeadingProtonE = E[2000000412]; auto& LeadingProtonAngle = Angle[2000000412];
+
+        // Access particle varaibles
         auto& nGENIE = Multiplicity[2000000000];
         auto& GENIEPx = Px[2000000000]; auto& GENIEPy = Py[2000000000];
         auto& GENIEPz = Pz[2000000000]; auto& GENIEP = P[2000000000];
@@ -357,6 +382,7 @@ int main( int argc, char ** argv ) {
 
             InDMPx[0] = InDM.Px(); InDMPy[0] = InDM.Py(); InDMPz[0] = InDM.Pz();
             InDMP[0] = InDM.P(); InDME[0] = InDM.E(); InDMAngle[0] = 0.;
+            std::vector< double > InDMMom3Vec = { InDMMom.Px(), InDMMom.Py(), InDMMom.Pz() };
 
             // Now look for the initial argon 4-momentum
             for ( size_t iMCParticle = 0; iMCParticle < MCTruthObj.NParticles(); ++iMCParticle ) {
@@ -398,6 +424,9 @@ int main( int argc, char ** argv ) {
                     GENIEP[nGENIE] = thisMCParticle->P();
                     GENIEE[nGENIE] = thisMCParticle->E();
 
+                    std::vector< double > GENIEP3Vec = { GENIEPx[nGENIE], GENIEPy[nGENIE], GENIEPz[nGENIE] };
+                    GENIEAngle[nGENIE] = CalculateAngle(InDMMom3Vec, GENIEP3Vec);
+
                     ++nGENIE;
                     ++nAllParticles;
 
@@ -411,6 +440,9 @@ int main( int argc, char ** argv ) {
                     MesonPz[nMesons] = thisMCParticle->Pz();
                     MesonP[nMesons] = thisMCParticle->P();
                     MesonE[nMesons] = thisMCParticle->E();
+
+                    std::vector< double > MesonP3Vec = { MesonPx[nMesons], MesonPy[nMesons], MesonPz[nMesons] };
+                    MesonAngle[nMesons] = CalculateAngle(InDMMom3Vec, MesonP3Vec);
 
                     Visible += Momentum;
                     VisibleNoN += Momentum;
@@ -438,6 +470,9 @@ int main( int argc, char ** argv ) {
                     BaryonPz[nBaryons] = thisMCParticle->Pz();
                     BaryonP[nBaryons] = thisMCParticle->P();
                     BaryonE[nBaryons] = thisMCParticle->E();
+
+                    std::vector< double > BaryonP3Vec = { BaryonPx[nBaryons], BaryonPy[nBaryons], BaryonPz[nBaryons] };
+                    BaryonAngle[nBaryons] = CalculateAngle(InDMMom3Vec, BaryonP3Vec);
 
                     Visible += Momentum;
                     VisibleNoN += Momentum;
@@ -471,6 +506,9 @@ int main( int argc, char ** argv ) {
                     ParticleP[nParticles] = thisMCParticle->P();
                     ParticleE[nParticles] = thisMCParticle->E();
 
+                    std::vector< double > ParticleP3Vec = { ParticlePx[nParticles], ParticlePy[nParticles], ParticlePz[nParticles] };
+                    ParticleAngle[nParticles] = CalculateAngle(InDMMom3Vec, ParticleP3Vec);
+
                     ++nParticles;
                     ++nAllParticles;
 
@@ -499,7 +537,6 @@ int main( int argc, char ** argv ) {
             // calculate the relevant angles between event-wide values: InDM and EventP, VisibleP, VisibleNoNP, etc.
             // unsure how to deal with ROOT::Math::DisplacementVector3D<Cartesian3D<Scalar> > objects right now so converting
             // to vector -- fix later. (Dane)
-            std::vector< double > InDMMom3Vec = { InDMMom.Px(), InDMMom.Py(), InDMMom.Pz() };
             std::vector< double > Event3Vec = { Event.Px(), Event.Py(), Event.Pz() };
             std::vector< double > Visible3Vec = { Visible.Px(), Visible.Py(), Visible.Pz() };
             std::vector< double > VisibleNoN3Vec = { VisibleNoN.Px(), VisibleNoN.Py(), VisibleNoN.Pz() };
@@ -507,55 +544,62 @@ int main( int argc, char ** argv ) {
             std::vector< double > LeadingParticleNoN3Vec = { LeadingParticleNoN.Px(), LeadingParticleNoN.Py(), LeadingParticleNoN.Pz() };
             std::vector< double > LeadingProton3Vec = { LeadingProton.Px(), LeadingProton.Py(), LeadingProton.Pz() };
 
-            Angle[0][0]          = CalculateAngle( InDMMom3Vec, Event3Vec );
-            Angle[2000000400][0] = CalculateAngle( InDMMom3Vec, Visible3Vec );
-            Angle[2000000401][0] = CalculateAngle( InDMMom3Vec, VisibleNoN3Vec );
-            Angle[2000000410][0] = CalculateAngle( InDMMom3Vec, LeadingParticle3Vec );
-            Angle[2000000411][0] = CalculateAngle( InDMMom3Vec, LeadingParticleNoN3Vec );
-            Angle[2000000412][0] = CalculateAngle( InDMMom3Vec, LeadingProton3Vec );
+            ResizeKinematics( EventPx, EventPy, EventPz, EventP, EventE, EventAngle, 1 );
+            ResizeKinematics( VisiblePx, VisiblePy, VisiblePz, VisibleP, VisibleE, VisibleAngle, 1 );
+            ResizeKinematics( VisibleNoNPx, VisibleNoNPy, VisibleNoNPz, VisibleNoNP, VisibleNoNE, VisibleNoNAngle, 1 );
+            ResizeKinematics( LeadingParticlePx, LeadingParticlePy, LeadingParticlePz, LeadingParticleP, LeadingParticleE, LeadingParticleAngle, 1 );
+            ResizeKinematics( LeadingParticleNoNPx, LeadingParticleNoNPy, LeadingParticleNoNPz, LeadingParticleNoNP, LeadingParticleNoNE, LeadingParticleNoNAngle, 1 );
+            ResizeKinematics( LeadingProtonPx, LeadingProtonPy, LeadingProtonPz, LeadingProtonP, LeadingProtonE, LeadingProtonAngle, 1 );
+
+            EventAngle[0]              = CalculateAngle( InDMMom3Vec, Event3Vec );
+            VisibleAngle[0]            = CalculateAngle( InDMMom3Vec, Visible3Vec );
+            VisibleNoNAngle[0]         = CalculateAngle( InDMMom3Vec, VisibleNoN3Vec );
+            LeadingParticleAngle[0]    = CalculateAngle( InDMMom3Vec, LeadingParticle3Vec );
+            LeadingParticleNoNAngle[0] = CalculateAngle( InDMMom3Vec, LeadingParticleNoN3Vec );
+            LeadingProtonAngle[0]      = CalculateAngle( InDMMom3Vec, LeadingProton3Vec );
+
         } // Loop over MCTruth
 
         // Fill the event-wide information
         // TODO: finish the filling
-        Px[0][0] = Event.Px();
-        Py[0][0] = Event.Py();
-        Pz[0][0] = Event.Pz();
-        P[0][0]  = Event.P();
-        E[0][0]  = Event.E();
+        EventPx[0] = Event.Px();
+        EventPy[0] = Event.Py();
+        EventPz[0] = Event.Pz();
+        EventP[0]  = Event.P();
+        EventE[0]  = Event.E();
 
-        Px[2000000400][0] = Visible.Px();
-        Px[2000000401][0] = VisibleNoN.Px();
-        Px[2000000410][0] = LeadingParticle.Px();
-        Px[2000000411][0] = LeadingParticleNoN.Px();
-        Px[2000000412][0] = LeadingProton.Px();
+        VisiblePx[0] = Visible.Px();
+        VisiblePy[0] = Visible.Py();
+        VisiblePz[0] = Visible.Pz();
+        VisibleP[0]  = Visible.P();
+        VisibleE[0]  = Visible.E();
 
-        Py[2000000400][0] = Visible.Py();
-        Py[2000000401][0] = VisibleNoN.Py();
-        Py[2000000410][0] = LeadingParticle.Py();
-        Py[2000000411][0] = LeadingParticleNoN.Py();
-        Py[2000000412][0] = LeadingProton.Py();
+        VisibleNoNPx[0] = VisibleNoN.Px();
+        VisibleNoNPy[0] = VisibleNoN.Py();
+        VisibleNoNPz[0] = VisibleNoN.Pz();
+        VisibleNoNP[0]  = VisibleNoN.P();
+        VisibleNoNE[0]  = VisibleNoN.E();
 
-        Pz[2000000400][0] = Visible.Pz();
-        Pz[2000000401][0] = VisibleNoN.Pz();
-        Pz[2000000410][0] = LeadingParticle.Pz();
-        Pz[2000000411][0] = LeadingParticleNoN.Pz();
-        Pz[2000000412][0] = LeadingProton.Pz();
+        LeadingParticlePx[0] = LeadingParticle.Px();
+        LeadingParticlePy[0] = LeadingParticle.Py();
+        LeadingParticlePz[0] = LeadingParticle.Pz();
+        LeadingParticleP[0] = LeadingParticle.P();
+        LeadingParticleE[0] = LeadingParticle.E();
 
-        P[2000000400][0] = Visible.P();
-        P[2000000401][0] = VisibleNoN.P();
-        P[2000000410][0] = LeadingParticle.P();
-        P[2000000411][0] = LeadingParticleNoN.P();
-        P[2000000412][0] = LeadingProton.P();
+        LeadingParticleNoNPx[0] = LeadingParticleNoN.Px();
+        LeadingParticleNoNPy[0] = LeadingParticleNoN.Py();
+        LeadingParticleNoNPz[0] = LeadingParticleNoN.Pz();
+        LeadingParticleNoNP[0] = LeadingParticleNoN.P();
+        LeadingParticleNoNE[0] = LeadingParticleNoN.E();
 
-        E[2000000400][0] = Visible.E();
-        E[2000000401][0] = VisibleNoN.E();
-        E[2000000410][0] = LeadingParticle.E();
-        E[2000000411][0] = LeadingParticleNoN.E();
-        E[2000000412][0] = LeadingProton.E();
+        LeadingProtonPx[0] = LeadingProton.Px();
+        LeadingProtonPy[0] = LeadingProton.Py();
+        LeadingProtonPz[0] = LeadingProton.Pz();
+        LeadingProtonP[0] = LeadingProton.P();
+        LeadingProtonE[0] = LeadingProton.E();
 
         fTree->Fill();
     } // End of an event
-
     fOut->Write();
     return 0;
 }
