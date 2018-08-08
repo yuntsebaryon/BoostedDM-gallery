@@ -128,8 +128,6 @@ void InitTree( TTree* pTree, CounterMap_t& Multiplicity, KinematicMap_t& Px, Kin
 
     ResetCounters( Multiplicity, Px, Py, Pz, P, E, Angle );
 
-    // TODO: Fill all the information into TTree
-
     // Event origin: neutrino, cosmics, etc.
     pTree->Branch( "EventOrigin", &EventOrigin );
     // Interaction mode
@@ -403,6 +401,8 @@ int main( int argc, char ** argv ) {
             for ( size_t iMCParticle = 0; iMCParticle < G4MCParticles.size(); ++iMCParticle ) {
 
                 const simb::MCParticle* thisMCParticle = G4MCParticles[iMCParticle];
+                // Only consider primary particles
+                if ( thisMCParticle->Process() != "primary" ) continue;
                 int pdgCode = thisMCParticle->PdgCode();
                 int statusCode = thisMCParticle->StatusCode();
 
@@ -561,7 +561,6 @@ int main( int argc, char ** argv ) {
         } // Loop over MCTruth
 
         // Fill the event-wide information
-        // TODO: finish the filling
         EventPx[0] = Event.Px();
         EventPy[0] = Event.Py();
         EventPz[0] = Event.Pz();
