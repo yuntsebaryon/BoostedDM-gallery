@@ -206,6 +206,7 @@ void InitTree( TTree* pTree, CounterMap_t& Multiplicity, KinematicMap_t& Px, Kin
     pTree->Branch( "Ar39Px", &Px[1000180390] );
     pTree->Branch( "Cl39Px", &Px[1000170390] );
     pTree->Branch( "InDMPx", &Px[-2000010000] );
+    pTree->Branch( "OutDMPx", &Px[2000010000] );
     pTree->Branch( "GENIEPx", &Px[2000000000] );
     pTree->Branch( "ProtonPy", &Py[2212] );
     pTree->Branch( "NeutronPy", &Py[2112] );
@@ -217,6 +218,7 @@ void InitTree( TTree* pTree, CounterMap_t& Multiplicity, KinematicMap_t& Px, Kin
     pTree->Branch( "Ar39Py", &Py[1000180390] );
     pTree->Branch( "Cl39Py", &Py[1000170390] );
     pTree->Branch( "InDMPy", &Py[-2000010000] );
+    pTree->Branch( "OutDMPy", &Py[2000010000] );
     pTree->Branch( "GENIEPy", &Py[2000000000] );
     pTree->Branch( "ProtonPz", &Pz[2212] );
     pTree->Branch( "NeutronPz", &Pz[2112] );
@@ -228,6 +230,7 @@ void InitTree( TTree* pTree, CounterMap_t& Multiplicity, KinematicMap_t& Px, Kin
     pTree->Branch( "Ar39Pz", &Pz[1000180390] );
     pTree->Branch( "Cl39Pz", &Pz[1000170390] );
     pTree->Branch( "InDMPz", &Pz[-2000010000] );
+    pTree->Branch( "OutDMPz", &Pz[2000010000] );
     pTree->Branch( "GENIEPz", &Pz[2000000000] );
     pTree->Branch( "ProtonP", &P[2212] );
     pTree->Branch( "NeutronP", &P[2112] );
@@ -239,6 +242,7 @@ void InitTree( TTree* pTree, CounterMap_t& Multiplicity, KinematicMap_t& Px, Kin
     pTree->Branch( "Ar39P", &P[1000180390] );
     pTree->Branch( "Cl39P", &P[1000170390] );
     pTree->Branch( "InDMP", &P[-2000010000] );
+    pTree->Branch( "OutDMP", &P[2000010000] );
     pTree->Branch( "GENIEP", &P[2000000000] );
     pTree->Branch( "ProtonE", &E[2212] );
     pTree->Branch( "NeutronE", &E[2112] );
@@ -250,6 +254,7 @@ void InitTree( TTree* pTree, CounterMap_t& Multiplicity, KinematicMap_t& Px, Kin
     pTree->Branch( "Ar39E", &E[1000180390] );
     pTree->Branch( "Cl39E", &E[1000170390] );
     pTree->Branch( "InDME", &E[-2000010000] );
+    pTree->Branch( "OutDME", &E[2000010000] );
     pTree->Branch( "GENIEE", &E[2000000000] );
     pTree->Branch( "ProtonAngle", &Angle[2212] );
     pTree->Branch( "NeutronAngle", &Angle[2112] );
@@ -258,6 +263,7 @@ void InitTree( TTree* pTree, CounterMap_t& Multiplicity, KinematicMap_t& Px, Kin
     pTree->Branch( "MesonAngle", &Angle[300] );
     pTree->Branch( "BaryonAngle", &Angle[3000] );
     pTree->Branch( "InDMAngle", &Angle[-2000010000] );
+    pTree->Branch( "OutDMAngle", &Angle[2000010000] );
     pTree->Branch( "GENIEAngle", &Angle[2000000000] );
 }
 
@@ -309,6 +315,14 @@ int main( int argc, char ** argv ) {
         auto& InDMP = P[-2000010000]; auto& InDME = E[-2000010000]; auto& InDMAngle = Angle[-2000010000];
         ResizeKinematics( InDMPx, InDMPy, InDMPz, InDMP, InDME, InDMAngle, 1 );
 
+        auto& OutDMPx = Px[2000010000]; auto& OutDMPy = Py[2000010000]; auto& OutDMPz = Pz[2000010000];
+        auto& OutDMP = P[2000010000]; auto& OutDME = E[2000010000]; auto& OutDMAngle = Angle[2000010000];
+        ResizeKinematics( OutDMPx, OutDMPy, OutDMPz, OutDMP, OutDME, OutDMAngle, 1 );
+
+        auto& Ar40Px = Px[1000180400]; auto& Ar40Py = Py[1000180400]; auto& Ar40Pz = Pz[1000180400];
+        auto& Ar40P = P[1000180400]; auto& Ar40E = E[1000180400]; auto& Ar40Angle = Angle[1000180400];
+        ResizeKinematics( Ar40Px, Ar40Py, Ar40Pz, Ar40P, Ar40E, Ar40Angle, 1 );
+
         // Access event-wide variables directly for later use
         auto& EventPx = Px[0]; auto& EventPy = Py[0]; auto& EventPz = Pz[0];
         auto& EventP = P[0]; auto& EventE = E[0]; auto& EventAngle = Angle[0];
@@ -328,7 +342,7 @@ int main( int argc, char ** argv ) {
         auto& LeadingProtonPx = Px[2000000412]; auto& LeadingProtonPy = Py[2000000412]; auto& LeadingProtonPz = Pz[2000000412];
         auto& LeadingProtonP = P[2000000412]; auto& LeadingProtonE = E[2000000412]; auto& LeadingProtonAngle = Angle[2000000412];
 
-        // Access particle varaibles
+        // Access particle variables
         auto& nGENIE = Multiplicity[2000000000];
         auto& GENIEPx = Px[2000000000]; auto& GENIEPy = Py[2000000000];
         auto& GENIEPz = Pz[2000000000]; auto& GENIEP = P[2000000000];
@@ -350,8 +364,15 @@ int main( int argc, char ** argv ) {
         for ( size_t iMCTruth = 0; iMCTruth < MCTruthObjs.size(); ++iMCTruth ) {
 
             // Assume only one incident DM particle, or one interaction in an event
-
             simb::MCTruth const& MCTruthObj = MCTruthObjs[iMCTruth];
+
+            // Check to see if event originates from a beam neutrino
+            EventOrigin = MCTruthObj.Origin();
+            //std::cout << "EventOrigin is " << EventOrigin << std::endl;
+            if ( EventOrigin != simb::kBeamNeutrino ) {
+              std::cout << "EventOrigin is not from beam neutrino! . . . "
+                        << "MCTruth origin is " << EventOrigin << std::endl;
+            }
 
             // The incident DM particle is stored in the neutrino container in the MCTruth
             simb::MCNeutrino const& InDMObj = MCTruthObj.GetNeutrino();
@@ -382,16 +403,27 @@ int main( int argc, char ** argv ) {
             InDMP[0] = InDM.P(); InDME[0] = InDM.E(); InDMAngle[0] = 0.;
             std::vector< double > InDMMom3Vec = { InDMMom.Px(), InDMMom.Py(), InDMMom.Pz() };
 
-            // Now look for the initial argon 4-momentum
+            // Now look for the initial argon 4-momentum and assign outgoing (final state) DM kinematic values
             for ( size_t iMCParticle = 0; iMCParticle < MCTruthObj.NParticles(); ++iMCParticle ) {
 
                 const simb::MCParticle& thisMCParticle = MCTruthObj.GetParticle( iMCParticle );
-                if ( thisMCParticle.StatusCode() == 1 ) continue;
+
+                if ( thisMCParticle.StatusCode() == 1 ) {
+                  if (thisMCParticle.PdgCode() == 2000010000 ) {
+                    OutDMPx[0] = thisMCParticle.Px(); OutDMPy[0] = thisMCParticle.Py(); OutDMPz[0] = thisMCParticle.Pz();
+                    OutDMP[0] = thisMCParticle.P(); OutDME[0] = thisMCParticle.E();
+                  }
+                }
+
                 // The incident DM particle has been filled
                 if ( thisMCParticle.StatusCode() == 0 ) {
                     if ( thisMCParticle.PdgCode() == 2000010000 ) continue;
                     Event += geo::vect::convertTo< Momentum4_t >( thisMCParticle.Momentum() );
-                    break;
+
+                    // (Dane) adding in block to assign initial Ar40 Px, Py, Pz, E, etc.
+                    Ar40Px[0] = thisMCParticle.Px(); Ar40Py[0] = thisMCParticle.Py(); Ar40Pz[0] = thisMCParticle.Pz();
+                    Ar40P[0] = thisMCParticle.P(); Ar40E[0] = thisMCParticle.E();
+                    //break;
                 }
             }
 
@@ -399,7 +431,6 @@ int main( int argc, char ** argv ) {
             std::vector< simb::MCParticle const* > const& G4MCParticles = G4MCParticlesAssn.at( iMCTruth );
 
             for ( size_t iMCParticle = 0; iMCParticle < G4MCParticles.size(); ++iMCParticle ) {
-
                 const simb::MCParticle* thisMCParticle = G4MCParticles[iMCParticle];
                 // Only consider primary particles
                 if ( thisMCParticle->Process() != "primary" ) continue;
@@ -513,6 +544,7 @@ int main( int argc, char ** argv ) {
                     ++nAllParticles;
 
                     if ( pdgCode == 2000010000 ) continue;
+
                     Visible += Momentum;
                     if ( Momentum.P() > LeadingParticleMax ) {
                         LeadingParticle = Momentum;
