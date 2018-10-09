@@ -12,6 +12,7 @@ CPPFLAGS=-I $(BOOST_INC) \
          -I $(LARCOREOBJ_INC) \
          -I $(LARDATAOBJ_INC) \
          -I $(LARCOREALG_INC) \
+         -I $(BOOSTEDDMANALYSIS_INC) \
          -I $(NUSIMDATA_INC) \
          -I $(ROOT_INC)
 
@@ -27,7 +28,8 @@ LDFLAGS=$$(root-config --libs) \
         -L $(NUSIMDATA_LIB) -l nusimdata_SimulationBase \
         -L $(LARCOREOBJ_LIB) -l larcoreobj_SummaryData \
         -L $(LARDATAOBJ_LIB) -l lardataobj_RecoBase -l lardataobj_MCBase -l lardataobj_RawData -l lardataobj_OpticalDetectorData -l lardataobj_AnalysisBase \
-        -L $(LARCOREALG_LIB) -l larcorealg_Geometry
+        -L $(LARCOREALG_LIB) -l larcorealg_Geometry \
+        -L $(BOOSTEDDMANALYSIS_LIB) -l boosteddmanalysis_DataObjects
 
 all: MCTruthDistributions MCParticleDistributions CheckMCTruthMCParticle MCDistributions
 
