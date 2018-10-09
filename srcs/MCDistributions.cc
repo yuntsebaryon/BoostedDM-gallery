@@ -312,7 +312,8 @@ void InitTree( TTree* pTree, CounterMap_t& Multiplicity, KinematicMap_t& Px, Kin
     pTree->Branch( "Ar39Px", &Px[1000180390] );
     pTree->Branch( "Cl39Px", &Px[1000170390] );
     pTree->Branch( "InDMPx", &Px[-2000010000] );
-    pTree->Branch( "OutDMPx", &Px[2000010000] );    
+    pTree->Branch( "OutDMPx", &Px[2000010000] );
+    pTree->Branch( "GENIEPx", &Px[2000000000] );
     pTree->Branch( "SmearedProtonPx", &Px[-2212] );
     pTree->Branch( "SmearedNeutronPx", &Px[-2112] );
     pTree->Branch( "SmearedPionPx", &Px[-211] );
@@ -474,6 +475,10 @@ int main( int argc, char ** argv ) {
         auto& OutDMP = P[2000010000]; auto& OutDME = E[2000010000]; auto& OutDMAngle = Angle[2000010000];
         ResizeKinematics( OutDMPx, OutDMPy, OutDMPz, OutDMP, OutDME, OutDMAngle, 1 );
 
+        auto& Ar40Px = Px[1000180400]; auto& Ar40Py = Py[1000180400]; auto& Ar40Pz = Pz[1000180400];
+        auto& Ar40P = P[1000180400]; auto& Ar40E = E[1000180400]; auto& Ar40Angle = Angle[1000180400];
+        ResizeKinematics( Ar40Px, Ar40Py, Ar40Pz, Ar40P, Ar40E, Ar40Angle, 1 );
+        
         // Access event-wide variables directly for later use
         auto& EventPx = Px[0]; auto& EventPy = Py[0]; auto& EventPz = Pz[0];
         auto& EventP = P[0]; auto& EventE = E[0]; auto& EventAngle = Angle[0];
@@ -517,6 +522,13 @@ int main( int argc, char ** argv ) {
             // Assume only one incident DM particle, or one interaction in an event
 
             simb::MCTruth const& MCTruthObj = MCTruthObjs[iMCTruth];
+            // Check to see if event originates from a beam neutrino
+            EventOrigin = MCTruthObj.Origin();
+            //std::cout << "EventOrigin is " << EventOrigin << std::endl;
+            if ( EventOrigin != simb::kBeamNeutrino ) {
+              std::cout << "EventOrigin is not from beam neutrino! . . . "
+                        << "MCTruth origin is " << EventOrigin << std::endl;
+            }
 
             // The incident DM particle is stored in the neutrino container in the MCTruth
             simb::MCNeutrino const& InDMObj = MCTruthObj.GetNeutrino();
@@ -547,7 +559,7 @@ int main( int argc, char ** argv ) {
             InDMP[0] = InDM.P(); InDME[0] = InDM.E(); InDMAngle[0] = 0.;
             std::vector< double > InDMMom3Vec = { InDMMom.Px(), InDMMom.Py(), InDMMom.Pz() };
 
-            // Now look for the initial argon 4-momentum
+            // Now look for the initial argon 4-momentum and assign outgoing (final state) DM kinematic values
             for ( size_t iMCParticle = 0; iMCParticle < MCTruthObj.NParticles(); ++iMCParticle ) {
 
                 const simb::MCParticle& thisMCParticle = MCTruthObj.GetParticle( iMCParticle );
@@ -560,6 +572,10 @@ int main( int argc, char ** argv ) {
                 if ( thisMCParticle.StatusCode() == 0 ) {
                     if ( thisMCParticle.PdgCode() == 2000010000 ) continue;
                     Event += geo::vect::convertTo< Momentum4_t >( thisMCParticle.Momentum() );
+                    
+                    // (Dane) adding in block to assign initial Ar40 Px, Py, Pz, E, etc.
+                    Ar40Px[0] = thisMCParticle.Px(); Ar40Py[0] = thisMCParticle.Py(); Ar40Pz[0] = thisMCParticle.Pz();
+                    Ar40P[0] = thisMCParticle.P(); Ar40E[0] = thisMCParticle.E();
                     // break;
                 }
             }
