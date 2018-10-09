@@ -32,11 +32,11 @@
 
 // "art" includes (canvas, and gallery)
 #include "canvas/Utilities/InputTag.h"
+#include "canvas/Persistency/Common/Ptr.h"
 #include "canvas/Persistency/Common/FindMany.h"
 #include "canvas/Persistency/Common/FindOne.h"
 #include "gallery/Event.h"
 #include "gallery/ValidHandle.h"
-
 
 // LArSoft, nutools includes
 #include "nusimdata/SimulationBase/MCTruth.h"
@@ -44,6 +44,9 @@
 #include "nusimdata/SimulationBase/MCParticle.h"
 #include "lardataobj/Simulation/GeneratedParticleInfo.h"
 #include "larcorealg/Geometry/geo_vectors_utils.h"
+
+// BDM libraries
+#include "boosteddmanalysis/DataObjects/SmearedMCParticle.h"
 
 
 using CounterMap_t = std::map< int, unsigned int >;
@@ -53,6 +56,7 @@ using Momentum4_t = ROOT::Math::LorentzVector< ROOT::Math::PxPyPzE4D< double > >
 
 void SetParticleTypes( std::vector< int >& ParticleTypes ) {
 
+    // For MCParticle information
     ParticleTypes.push_back( 0 );  // All particles, including visible and invisible
     ParticleTypes.push_back( 2212 );  // protons
     ParticleTypes.push_back( 2112 );  // neutrons
@@ -71,6 +75,25 @@ void SetParticleTypes( std::vector< int >& ParticleTypes ) {
     ParticleTypes.push_back( 2000000410 ); // Leading particle among all the visible particles and neutrons
     ParticleTypes.push_back( 2000000411 ); // Leading particle among all the visible particles but not neutrons
     ParticleTypes.push_back( 2000000412 ); // Leading proton
+    // For smeared MC particles
+    ParticleTypes.push_back( -2212 );  // protons
+    ParticleTypes.push_back( -2112 );  // neutrons
+    ParticleTypes.push_back( -211  );  // charged pions
+    ParticleTypes.push_back( -13  );   // muons
+    ParticleTypes.push_back( -11  );   // electrons
+    ParticleTypes.push_back( -22  );   // photons
+    ParticleTypes.push_back( -2000000400 ); // All the smeared visible particles and smeared neutrons
+    ParticleTypes.push_back( -2000000401 ); // All the smeared visible particles but not neutrons
+    ParticleTypes.push_back( -2000000402 ); // All the smeared reconstructable particles and reconstructable neutrons
+    ParticleTypes.push_back( -2000000403 ); // All the smeared reconstructable particles but not neutrons
+    ParticleTypes.push_back( -2000000410 ); // Leading smeared particle among all the smeared visible particles and smeared neutrons
+    ParticleTypes.push_back( -2000000411 ); // Leading smeared particle among all the smeared visible particles but not neutrons
+    ParticleTypes.push_back( -2000000412 ); // Leading smeared particle among all the smeared reconstructable particles and reconstructable neutrons
+    ParticleTypes.push_back( -2000000413 ); // Leading smeared particle among all the smeared reconstructable particles but not neutrons
+    ParticleTypes.push_back( -2000000414 ); // Leading smeared proton
+    ParticleTypes.push_back( -2000000415 ); // Leading smeared reconstructable proton
+    
+    
 }
 
 void ResetCounters( CounterMap_t& Multiplicity, KinematicMap_t& Px, KinematicMap_t& Py, KinematicMap_t& Pz, KinematicMap_t& P, KinematicMap_t& E, KinematicMap_t& Angle ) {
@@ -180,6 +203,77 @@ void InitTree( TTree* pTree, CounterMap_t& Multiplicity, KinematicMap_t& Px, Kin
     pTree->Branch( "LeadingProtonE", &E[2000000412] );
     pTree->Branch( "LeadingProtonAngle", &Angle[2000000412] );
 
+    pTree->Branch( "SmearedVisiblePx", &Px[-2000000400] );
+    pTree->Branch( "SmearedVisiblePy", &Py[-2000000400] );
+    pTree->Branch( "SmearedVisiblePz", &Pz[-2000000400] );
+    pTree->Branch( "SmearedVisibleP", &P[-2000000400] );
+    pTree->Branch( "SmearedVisibleE", &E[-2000000400] );
+    pTree->Branch( "SmearedVisibleAngle", &Angle[-2000000400] );
+    
+    pTree->Branch( "SmearedVisibleNonPx", &Px[-2000000401] );
+    pTree->Branch( "SmearedVisibleNonPy", &Py[-2000000401] );
+    pTree->Branch( "SmearedVisibleNonPz", &Pz[-2000000401] );
+    pTree->Branch( "SmearedVisibleNonP", &P[-2000000401] );
+    pTree->Branch( "SmearedVisibleNonE", &E[-2000000401] );
+    pTree->Branch( "SmearedVisibleNonAngle", &Angle[-2000000401] );
+
+    pTree->Branch( "SmearedReconstructablePx", &Px[-2000000402] );
+    pTree->Branch( "SmearedReconstructablePy", &Py[-2000000402] );
+    pTree->Branch( "SmearedReconstructablePz", &Pz[-2000000402] );
+    pTree->Branch( "SmearedReconstructableP", &P[-2000000402] );
+    pTree->Branch( "SmearedReconstructableE", &E[-2000000402] );
+    pTree->Branch( "SmearedReconstructableAngle", &Angle[-2000000402] );
+
+    pTree->Branch( "SmearedReconstructableNoNPx", &Px[-2000000403] );
+    pTree->Branch( "SmearedReconstructableNoNPy", &Py[-2000000403] );
+    pTree->Branch( "SmearedReconstructableNoNPz", &Pz[-2000000403] );
+    pTree->Branch( "SmearedReconstructableNoNP", &P[-2000000403] );
+    pTree->Branch( "SmearedReconstructableNoNE", &E[-2000000403] );
+    pTree->Branch( "SmearedReconstructableNoNAngle", &Angle[-2000000403] );
+    
+    pTree->Branch( "LeadingSmearedPx", &Px[-2000000410] );
+    pTree->Branch( "LeadingSmearedPy", &Py[-2000000410] );
+    pTree->Branch( "LeadingSmearedPz", &Pz[-2000000410] );
+    pTree->Branch( "LeadingSmearedP", &P[-2000000410] );
+    pTree->Branch( "LeadingSmearedE", &E[-2000000410] );
+    pTree->Branch( "LeadingSmearedAngle", &Angle[-2000000410] );
+    
+    pTree->Branch( "LeadingSmearedNoNPx", &Px[-2000000411] );
+    pTree->Branch( "LeadingSmearedNoNPy", &Py[-2000000411] );
+    pTree->Branch( "LeadingSmearedNoNPz", &Pz[-2000000411] );
+    pTree->Branch( "LeadingSmearedNoNP", &P[-2000000411] );
+    pTree->Branch( "LeadingSmearedNoNE", &E[-2000000411] );
+    pTree->Branch( "LeadingSmearedNoNAngle", &Angle[-2000000411] );
+
+    pTree->Branch( "LeadingSmearedReconstructablePx", &Px[-2000000412] );
+    pTree->Branch( "LeadingSmearedReconstructablePy", &Py[-2000000412] );
+    pTree->Branch( "LeadingSmearedReconstructablePz", &Pz[-2000000412] );
+    pTree->Branch( "LeadingSmearedReconstructableP", &P[-2000000412] );
+    pTree->Branch( "LeadingSmearedReconstructableE", &E[-2000000412] );
+    pTree->Branch( "LeadingSmearedReconstructableAngle", &Angle[-2000000412] );
+    
+    pTree->Branch( "LeadingSmearedReconstructableNoNPx", &Px[-2000000413] );
+    pTree->Branch( "LeadingSmearedReconstructableNoNPy", &Py[-2000000413] );
+    pTree->Branch( "LeadingSmearedReconstructableNoNPz", &Pz[-2000000413] );
+    pTree->Branch( "LeadingSmearedReconstructableNoNP", &P[-2000000413] );
+    pTree->Branch( "LeadingSmearedReconstructableNoNE", &E[-2000000413] );
+    pTree->Branch( "LeadingSmearedReconstructableNoNAngle", &Angle[-2000000413] );
+
+    pTree->Branch( "LeadingSmearedProtonPx", &Px[-2000000414] );
+    pTree->Branch( "LeadingSmearedProtonPy", &Py[-2000000414] );
+    pTree->Branch( "LeadingSmearedProtonPz", &Pz[-2000000414] );
+    pTree->Branch( "LeadingSmearedProtonP", &P[-2000000414] );
+    pTree->Branch( "LeadingSmearedProtonE", &E[-2000000414] );
+    pTree->Branch( "LeadingSmearedProtonAngle", &Angle[-2000000414] );
+    
+    pTree->Branch( "LeadingSmearedReconstructableProtonPx", &Px[-2000000415] );
+    pTree->Branch( "LeadingSmearedReconstructableProtonPy", &Py[-2000000415] );
+    pTree->Branch( "LeadingSmearedReconstructableProtonPz", &Pz[-2000000415] );
+    pTree->Branch( "LeadingSmearedReconstructableProtonP", &P[-2000000415] );
+    pTree->Branch( "LeadingSmearedReconstructableProtonE", &E[-2000000415] );
+    pTree->Branch( "LeadingSmearedReconstructableProtonAngle", &Angle[-2000000415] );
+    
+    
     // Event-wide particle multiplicity
     pTree->Branch( "nParticles", &Multiplicity[0], "nParticles/i" );
     pTree->Branch( "nProtons", &Multiplicity[2212], "nProtons/i" );
@@ -194,6 +288,18 @@ void InitTree( TTree* pTree, CounterMap_t& Multiplicity, KinematicMap_t& Px, Kin
     pTree->Branch( "nInDMs", &Multiplicity[-2000010000], "nInDMs/i" );
     pTree->Branch( "nOutDMs", &Multiplicity[2000010000], "nOutDMs/i" );
     pTree->Branch( "nGENIE", &Multiplicity[2000000000], "nGENIE/i" );
+    pTree->Branch( "nSelProtons", &Multiplicity[-2212], "nSelProtons/i" );
+    pTree->Branch( "nSelNeutrons", &Multiplicity[-2112], "nSelNeutrons/i" );
+    pTree->Branch( "nSelPions", &Multiplicity[-211], "nSelPions/i" );
+    pTree->Branch( "nSelMuons", &Multiplicity[-13], "nSelMuons/i" );
+    pTree->Branch( "nSelElectrons", &Multiplicity[-11], "nSelElectrons/i" );
+    pTree->Branch( "nSelPhotons", &Multiplicity[-22], "nSelPhotons/i" );
+    pTree->Branch( "nSmearedVisible", &Multiplicity[-2000000400], "nSmearedVisiable/i" );
+    pTree->Branch( "nSmearedVisibleNoN", &Multiplicity[-2000000401], "nSmearedVisibleNoN/i" );
+    pTree->Branch( "nSmearedReconstructable", &Multiplicity[-2000000402], "nSmearedReconstructable/i" );
+    pTree->Branch( "nSmearedReconstructableNoN", &Multiplicity[-2000000403], "nSmearedReconstructableNoN/i" );
+    
+    
 
     // Variables for each final state particle
     pTree->Branch( "ProtonPx", &Px[2212] );
@@ -206,7 +312,13 @@ void InitTree( TTree* pTree, CounterMap_t& Multiplicity, KinematicMap_t& Px, Kin
     pTree->Branch( "Ar39Px", &Px[1000180390] );
     pTree->Branch( "Cl39Px", &Px[1000170390] );
     pTree->Branch( "InDMPx", &Px[-2000010000] );
-    pTree->Branch( "GENIEPx", &Px[2000000000] );
+    pTree->Branch( "OutDMPx", &Px[2000010000] );    
+    pTree->Branch( "SmearedProtonPx", &Px[-2212] );
+    pTree->Branch( "SmearedNeutronPx", &Px[-2112] );
+    pTree->Branch( "SmearedPionPx", &Px[-211] );
+    pTree->Branch( "SmearedMuonPx", &Px[-13] );
+    pTree->Branch( "SmearedElectronPx", &Px[-11] );
+    pTree->Branch( "SmearedPhotonPx", &Px[-22] );    
     pTree->Branch( "ProtonPy", &Py[2212] );
     pTree->Branch( "NeutronPy", &Py[2112] );
     pTree->Branch( "PionPy", &Py[211] );
@@ -217,7 +329,14 @@ void InitTree( TTree* pTree, CounterMap_t& Multiplicity, KinematicMap_t& Px, Kin
     pTree->Branch( "Ar39Py", &Py[1000180390] );
     pTree->Branch( "Cl39Py", &Py[1000170390] );
     pTree->Branch( "InDMPy", &Py[-2000010000] );
+    pTree->Branch( "OutDMPy", &Py[2000010000] );
     pTree->Branch( "GENIEPy", &Py[2000000000] );
+    pTree->Branch( "SmearedProtonPy", &Py[-2212] );
+    pTree->Branch( "SmearedNeutronPy", &Py[-2112] );
+    pTree->Branch( "SmearedPionPy", &Py[-211] );
+    pTree->Branch( "SmearedMuonPy", &Py[-13] );
+    pTree->Branch( "SmearedElectronPy", &Py[-11] );
+    pTree->Branch( "SmearedPhotonPy", &Py[-22] );   
     pTree->Branch( "ProtonPz", &Pz[2212] );
     pTree->Branch( "NeutronPz", &Pz[2112] );
     pTree->Branch( "PionPz", &Pz[211] );
@@ -228,7 +347,14 @@ void InitTree( TTree* pTree, CounterMap_t& Multiplicity, KinematicMap_t& Px, Kin
     pTree->Branch( "Ar39Pz", &Pz[1000180390] );
     pTree->Branch( "Cl39Pz", &Pz[1000170390] );
     pTree->Branch( "InDMPz", &Pz[-2000010000] );
+    pTree->Branch( "OutDMPz", &Pz[2000010000] );
     pTree->Branch( "GENIEPz", &Pz[2000000000] );
+    pTree->Branch( "SmearedProtonPz", &Pz[-2212] );
+    pTree->Branch( "SmearedNeutronPz", &Pz[-2112] );
+    pTree->Branch( "SmearedPionPz", &Pz[-211] );
+    pTree->Branch( "SmearedMuonPz", &Pz[-13] );
+    pTree->Branch( "SmearedElectronPz", &Pz[-11] );
+    pTree->Branch( "SmearedPhotonPz", &Pz[-22] );   
     pTree->Branch( "ProtonP", &P[2212] );
     pTree->Branch( "NeutronP", &P[2112] );
     pTree->Branch( "PionP", &P[211] );
@@ -239,7 +365,14 @@ void InitTree( TTree* pTree, CounterMap_t& Multiplicity, KinematicMap_t& Px, Kin
     pTree->Branch( "Ar39P", &P[1000180390] );
     pTree->Branch( "Cl39P", &P[1000170390] );
     pTree->Branch( "InDMP", &P[-2000010000] );
+    pTree->Branch( "OutDMP", &P[2000010000] );
     pTree->Branch( "GENIEP", &P[2000000000] );
+    pTree->Branch( "SmearedProtonP", &P[-2212] );
+    pTree->Branch( "SmearedNeutronP", &P[-2112] );
+    pTree->Branch( "SmearedPionP", &P[-211] );
+    pTree->Branch( "SmearedMuonP", &P[-13] );
+    pTree->Branch( "SmearedElectronP", &P[-11] );
+    pTree->Branch( "SmearedPhotonP", &P[-22] );   
     pTree->Branch( "ProtonE", &E[2212] );
     pTree->Branch( "NeutronE", &E[2112] );
     pTree->Branch( "PionE", &E[211] );
@@ -250,7 +383,14 @@ void InitTree( TTree* pTree, CounterMap_t& Multiplicity, KinematicMap_t& Px, Kin
     pTree->Branch( "Ar39E", &E[1000180390] );
     pTree->Branch( "Cl39E", &E[1000170390] );
     pTree->Branch( "InDME", &E[-2000010000] );
+    pTree->Branch( "OutDME", &E[2000010000] );
     pTree->Branch( "GENIEE", &E[2000000000] );
+    pTree->Branch( "SmearedProtonE", &E[-2212] );
+    pTree->Branch( "SmearedNeutronE", &E[-2112] );
+    pTree->Branch( "SmearedPionE", &E[-211] );
+    pTree->Branch( "SmearedMuonE", &E[-13] );
+    pTree->Branch( "SmearedElectronE", &E[-11] );
+    pTree->Branch( "SmearedPhotonE", &E[-22] );   
     pTree->Branch( "ProtonAngle", &Angle[2212] );
     pTree->Branch( "NeutronAngle", &Angle[2112] );
     pTree->Branch( "PionAngle", &Angle[211] );
@@ -258,7 +398,14 @@ void InitTree( TTree* pTree, CounterMap_t& Multiplicity, KinematicMap_t& Px, Kin
     pTree->Branch( "MesonAngle", &Angle[300] );
     pTree->Branch( "BaryonAngle", &Angle[3000] );
     pTree->Branch( "InDMAngle", &Angle[-2000010000] );
+    pTree->Branch( "OutDMAngle", &Angle[2000010000] );
     pTree->Branch( "GENIEAngle", &Angle[2000000000] );
+    pTree->Branch( "SmearedProtonAngle", &Angle[-2212] );
+    pTree->Branch( "SmearedNeutronAngle", &Angle[-2112] );
+    pTree->Branch( "SmearedPionAngle", &Angle[-211] );
+    pTree->Branch( "SmearedMuonAngle", &Angle[-13] );
+    pTree->Branch( "SmearedElectronAngle", &Angle[-11] );
+    pTree->Branch( "SmearedPhotonAngle", &Angle[-22] );   
 }
 
 
@@ -267,13 +414,18 @@ int main( int argc, char ** argv ) {
     std::vector< std::string > Filenames;
     Filenames.push_back( argv[1] );
 
-    std::string GenLabel = "gsimple";
+    std::string GenLabel = "dk2nu";
     std::string G4Label = "largeant";
+    // std::string SelMCLabel = "selector";
+    std::string SmearedMCLabel = "smear";
     art::InputTag MCTruthTag { GenLabel };
     art::InputTag MCParticleTag { G4Label };
+    // art::InputTag SelMCParticleTag { SelMCLabel };
+    art::InputTag SmearedMCTag { SmearedMCLabel };
 
-    TFile *fOut = new TFile( "MCParticleDistributions.root", "RECREATE" );
-    TTree *fTree = new TTree( "MCParticles", "Primary MC Particles" );
+    
+    TFile *fOut = new TFile( "SmearedMCParticles.root", "RECREATE" );
+    TTree *fTree = new TTree( "MCParticles", "Primary MC particles and smeared stable final state particles" );
 
     CounterMap_t Multiplicity;
     KinematicMap_t Px, Py, Pz, P, E, Angle;
@@ -297,6 +449,15 @@ int main( int argc, char ** argv ) {
         // Find the MCParticles produced by LArG4 and associated to the MCTruth
         art::FindMany< simb::MCParticle, sim::GeneratedParticleInfo > G4MCParticlesAssn( MCTruthHandle, ev, MCParticleTag );
 
+        // Access the selected MC particles: protons, muons, charged pions, electrons, photons, and possibly neutrons (depending on the configuration)
+        // auto const& SelMCHandle = ev.getValidHandle< std::vector< art::Ptr< simb::MCParticle > > >( SelMCParticleTag );
+        // auto const& SelMCObj    = *SelMCHandle;
+
+        // Access the smeared selected MC particles
+        auto const& SmearedMCHandle = ev.getValidHandle< std::vector< bdm::SmearedMCParticle > >( SmearedMCTag );
+        auto const& SmearedMCParts   = *SmearedMCHandle;
+
+
         // Access the element of the map directly
         auto& nAllParticles = Multiplicity[0];
         auto& nInDM = Multiplicity[-2000010000];
@@ -308,6 +469,10 @@ int main( int argc, char ** argv ) {
         auto& InDMPx = Px[-2000010000]; auto& InDMPy = Py[-2000010000]; auto& InDMPz = Pz[-2000010000];
         auto& InDMP = P[-2000010000]; auto& InDME = E[-2000010000]; auto& InDMAngle = Angle[-2000010000];
         ResizeKinematics( InDMPx, InDMPy, InDMPz, InDMP, InDME, InDMAngle, 1 );
+
+        auto& OutDMPx = Px[2000010000]; auto& OutDMPy = Py[2000010000]; auto& OutDMPz = Pz[2000010000];
+        auto& OutDMP = P[2000010000]; auto& OutDME = E[2000010000]; auto& OutDMAngle = Angle[2000010000];
+        ResizeKinematics( OutDMPx, OutDMPy, OutDMPz, OutDMP, OutDME, OutDMAngle, 1 );
 
         // Access event-wide variables directly for later use
         auto& EventPx = Px[0]; auto& EventPy = Py[0]; auto& EventPz = Pz[0];
@@ -386,15 +551,23 @@ int main( int argc, char ** argv ) {
             for ( size_t iMCParticle = 0; iMCParticle < MCTruthObj.NParticles(); ++iMCParticle ) {
 
                 const simb::MCParticle& thisMCParticle = MCTruthObj.GetParticle( iMCParticle );
-                if ( thisMCParticle.StatusCode() == 1 ) continue;
+                if ( thisMCParticle.StatusCode() == 1 && thisMCParticle.PdgCode() == 2000010000 ) {
+                    const auto Momentum = geo::vect::convertTo< Momentum4_t >( thisMCParticle.Momentum() );
+                    OutDMPx[0] = Momentum.Px(); OutDMPy[0] = Momentum.Py(); OutDMPz[0] = Momentum.Pz();
+                    OutDMP[0] = Momentum.P(); OutDME[0] = Momentum.E();
+                } else if ( thisMCParticle.StatusCode() == 1 ) continue;
                 // The incident DM particle has been filled
                 if ( thisMCParticle.StatusCode() == 0 ) {
                     if ( thisMCParticle.PdgCode() == 2000010000 ) continue;
                     Event += geo::vect::convertTo< Momentum4_t >( thisMCParticle.Momentum() );
-                    break;
+                    // break;
                 }
             }
 
+            std::vector< double > OutDMMom3Vec = { OutDMPx[0], OutDMPy[0], OutDMPz[0] };
+            OutDMAngle[0] = CalculateAngle( InDMMom3Vec, OutDMMom3Vec );
+
+            
             // Find all the (stable final state) MCParticles associated to the MCTruth object
             std::vector< simb::MCParticle const* > const& G4MCParticles = G4MCParticlesAssn.at( iMCTruth );
 
@@ -411,6 +584,7 @@ int main( int argc, char ** argv ) {
                 }
 
                 const auto Momentum = geo::vect::convertTo< Momentum4_t >( thisMCParticle->Momentum() );
+                if ( Momentum.P() < 0.25 ) continue;
                 Event += Momentum;
 
                 if ( pdgCode > 2000000000 && pdgCode < 2000000301 ) {
@@ -534,32 +708,34 @@ int main( int argc, char ** argv ) {
                     }
                 }
             } // Loop over MCParticles
-            // calculate the relevant angles between event-wide values: InDM and EventP, VisibleP, VisibleNoNP, etc.
-            // unsure how to deal with ROOT::Math::DisplacementVector3D<Cartesian3D<Scalar> > objects right now so converting
-            // to vector -- fix later. (Dane)
-            std::vector< double > Event3Vec = { Event.Px(), Event.Py(), Event.Pz() };
-            std::vector< double > Visible3Vec = { Visible.Px(), Visible.Py(), Visible.Pz() };
-            std::vector< double > VisibleNoN3Vec = { VisibleNoN.Px(), VisibleNoN.Py(), VisibleNoN.Pz() };
-            std::vector< double > LeadingParticle3Vec = { LeadingParticle.Px(), LeadingParticle.Py(), LeadingParticle.Pz() };
-            std::vector< double > LeadingParticleNoN3Vec = { LeadingParticleNoN.Px(), LeadingParticleNoN.Py(), LeadingParticleNoN.Pz() };
-            std::vector< double > LeadingProton3Vec = { LeadingProton.Px(), LeadingProton.Py(), LeadingProton.Pz() };
-
-            ResizeKinematics( EventPx, EventPy, EventPz, EventP, EventE, EventAngle, 1 );
-            ResizeKinematics( VisiblePx, VisiblePy, VisiblePz, VisibleP, VisibleE, VisibleAngle, 1 );
-            ResizeKinematics( VisibleNoNPx, VisibleNoNPy, VisibleNoNPz, VisibleNoNP, VisibleNoNE, VisibleNoNAngle, 1 );
-            ResizeKinematics( LeadingParticlePx, LeadingParticlePy, LeadingParticlePz, LeadingParticleP, LeadingParticleE, LeadingParticleAngle, 1 );
-            ResizeKinematics( LeadingParticleNoNPx, LeadingParticleNoNPy, LeadingParticleNoNPz, LeadingParticleNoNP, LeadingParticleNoNE, LeadingParticleNoNAngle, 1 );
-            ResizeKinematics( LeadingProtonPx, LeadingProtonPy, LeadingProtonPz, LeadingProtonP, LeadingProtonE, LeadingProtonAngle, 1 );
-
-            EventAngle[0]              = CalculateAngle( InDMMom3Vec, Event3Vec );
-            VisibleAngle[0]            = CalculateAngle( InDMMom3Vec, Visible3Vec );
-            VisibleNoNAngle[0]         = CalculateAngle( InDMMom3Vec, VisibleNoN3Vec );
-            LeadingParticleAngle[0]    = CalculateAngle( InDMMom3Vec, LeadingParticle3Vec );
-            LeadingParticleNoNAngle[0] = CalculateAngle( InDMMom3Vec, LeadingParticleNoN3Vec );
-            LeadingProtonAngle[0]      = CalculateAngle( InDMMom3Vec, LeadingProton3Vec );
-
+            
         } // Loop over MCTruth
 
+        // calculate the relevant angles between event-wide values: InDM and EventP, VisibleP, VisibleNoNP, etc.
+        // unsure how to deal with ROOT::Math::DisplacementVector3D<Cartesian3D<Scalar> > objects right now so converting
+        // to vector -- fix later. (Dane)
+        std::vector< double > Event3Vec = { Event.Px(), Event.Py(), Event.Pz() };
+        std::vector< double > Visible3Vec = { Visible.Px(), Visible.Py(), Visible.Pz() };
+        std::vector< double > VisibleNoN3Vec = { VisibleNoN.Px(), VisibleNoN.Py(), VisibleNoN.Pz() };
+        std::vector< double > LeadingParticle3Vec = { LeadingParticle.Px(), LeadingParticle.Py(), LeadingParticle.Pz() };
+        std::vector< double > LeadingParticleNoN3Vec = { LeadingParticleNoN.Px(), LeadingParticleNoN.Py(), LeadingParticleNoN.Pz() };
+        std::vector< double > LeadingProton3Vec = { LeadingProton.Px(), LeadingProton.Py(), LeadingProton.Pz() };
+
+        ResizeKinematics( EventPx, EventPy, EventPz, EventP, EventE, EventAngle, 1 );
+        ResizeKinematics( VisiblePx, VisiblePy, VisiblePz, VisibleP, VisibleE, VisibleAngle, 1 );
+        ResizeKinematics( VisibleNoNPx, VisibleNoNPy, VisibleNoNPz, VisibleNoNP, VisibleNoNE, VisibleNoNAngle, 1 );
+        ResizeKinematics( LeadingParticlePx, LeadingParticlePy, LeadingParticlePz, LeadingParticleP, LeadingParticleE, LeadingParticleAngle, 1 );
+        ResizeKinematics( LeadingParticleNoNPx, LeadingParticleNoNPy, LeadingParticleNoNPz, LeadingParticleNoNP, LeadingParticleNoNE, LeadingParticleNoNAngle, 1 );
+        ResizeKinematics( LeadingProtonPx, LeadingProtonPy, LeadingProtonPz, LeadingProtonP, LeadingProtonE, LeadingProtonAngle, 1 );
+
+        std::vector< double > InDMMom3Vec = { InDMPx[0], InDMPy[0], InDMPz[0] };
+        EventAngle[0]              = CalculateAngle( InDMMom3Vec, Event3Vec );
+        VisibleAngle[0]            = CalculateAngle( InDMMom3Vec, Visible3Vec );
+        VisibleNoNAngle[0]         = CalculateAngle( InDMMom3Vec, VisibleNoN3Vec );
+        LeadingParticleAngle[0]    = CalculateAngle( InDMMom3Vec, LeadingParticle3Vec );
+        LeadingParticleNoNAngle[0] = CalculateAngle( InDMMom3Vec, LeadingParticleNoN3Vec );
+        LeadingProtonAngle[0]      = CalculateAngle( InDMMom3Vec, LeadingProton3Vec );
+        
         // Fill the event-wide information
         EventPx[0] = Event.Px();
         EventPy[0] = Event.Py();
@@ -597,6 +773,218 @@ int main( int argc, char ** argv ) {
         LeadingProtonP[0] = LeadingProton.P();
         LeadingProtonE[0] = LeadingProton.E();
 
+        
+        // ----------------------------------------------------------------------------------------------------
+        // Smeared MC particles (cheated reconstruction)
+        // ----------------------------------------------------------------------------------------------------
+        
+        auto& nSmearedVisible       = Multiplicity[-2000000400];
+        auto& nSmearedVisibleNoN    = Multiplicity[-2000000401];
+        auto& nSmearedRecontable    = Multiplicity[-2000000402];
+        auto& nSmearedRecontableNoN = Multiplicity[-2000000403];
+        Momentum4_t SmearedVisible, SmearedVisibleNoN, SmearedRecontable, SmearedRecontableNoN;
+        Momentum4_t LeadingSmeared, LeadingSmearedNoN, LeadingSmearedRecontable, LeadingSmearedRecontableNoN;
+        Momentum4_t LeadingSmearedProton, LeadingSmearedRecontableProton;
+        double LeadingSmearedMax = 0., LeadingSmearedNoNMax = 0.;
+        double LeadingSmearedRecontableMax = 0., LeadingSmearedRecontableNoNMax = 0.;
+        double LeadingSmearedProtonMax = 0., LeadingSmearedRecontableProtonMax = 0.;
+        
+        for ( size_t iSmearedMC = 0; iSmearedMC < SmearedMCParts.size(); ++iSmearedMC ) {
+          
+            bdm::SmearedMCParticle const& SmearedMCPart = SmearedMCParts[iSmearedMC];
+            int pdgCode = SmearedMCPart.particleId();
+            int particleCode = -1*abs(pdgCode);
+
+            auto& nParticles = Multiplicity[particleCode];
+            auto& ParticlePx = Px[particleCode]; auto& ParticlePy = Py[particleCode];
+            auto& ParticlePz = Pz[particleCode]; auto& ParticleP = P[particleCode];
+            auto& ParticleE = E[particleCode]; auto& ParticleAngle = Angle[particleCode];
+
+            if ( ParticlePx.size() <= nParticles )
+                ResizeKinematics( ParticlePx, ParticlePy, ParticlePz, ParticleP, ParticleE, ParticleAngle, nParticles + 1 );
+
+            ParticlePx[nParticles] = SmearedMCPart.momentum().X();
+            ParticlePy[nParticles] = SmearedMCPart.momentum().Y();
+            ParticlePz[nParticles] = SmearedMCPart.momentum().Z();
+            ParticleP[nParticles] = SmearedMCPart.momentum().R();
+            ParticleE[nParticles] = SmearedMCPart.E();
+            Momentum4_t thisMomentum4( ParticlePx[nParticles], ParticlePy[nParticles], ParticlePz[nParticles], ParticleE[nParticles] );
+
+            std::vector< double > ParticleP3Vec = { ParticlePx[nParticles], ParticlePy[nParticles], ParticlePz[nParticles] };
+            ParticleAngle[nParticles] = CalculateAngle( InDMMom3Vec, ParticleP3Vec );
+
+            ++nParticles;
+            ++nSmearedVisible;
+            SmearedVisible += thisMomentum4;
+            if ( thisMomentum4.P() > LeadingSmearedMax ) {
+                LeadingSmeared = thisMomentum4;
+                LeadingSmearedMax = thisMomentum4.P();
+            }
+            
+            if ( abs(pdgCode) == 2212 && thisMomentum4.P() > LeadingSmearedProtonMax ) {
+                LeadingSmearedProton = thisMomentum4;
+                LeadingSmearedProtonMax = thisMomentum4.P();
+            }
+            
+            // Reconstructable
+            if ( SmearedMCPart.isValid() ) {
+                SmearedRecontable += thisMomentum4;
+                ++nSmearedRecontable;
+                if ( thisMomentum4.P() > LeadingSmearedRecontableMax ) {
+                    LeadingSmearedRecontable = thisMomentum4;
+                    LeadingSmearedRecontableMax = thisMomentum4.P();
+                }
+                if ( abs(pdgCode) == 2212 && thisMomentum4.P() > LeadingSmearedRecontableProtonMax ) {
+                    LeadingSmearedRecontableProton = thisMomentum4;
+                    LeadingSmearedRecontableProtonMax = thisMomentum4.P();
+                }
+            }
+            
+            // No neutrons
+            if ( abs(pdgCode) != 2112 ) {
+                SmearedVisibleNoN += thisMomentum4;
+                ++nSmearedVisibleNoN;
+                if ( thisMomentum4.P() > LeadingSmearedNoNMax ) {
+                    LeadingSmearedNoN = thisMomentum4;
+                    LeadingSmearedNoNMax = thisMomentum4.P();
+                }
+            }
+            
+            // No neutron and reconstrutable
+            if ( abs(pdgCode) != 2112 && SmearedMCPart.isValid() ) {
+                SmearedRecontableNoN += thisMomentum4;
+                ++nSmearedRecontableNoN;
+                if ( thisMomentum4.P() > LeadingSmearedRecontableNoNMax ) {
+                    LeadingSmearedRecontableNoN = thisMomentum4;
+                    LeadingSmearedRecontableNoNMax = thisMomentum4.P();
+                }
+            }
+            
+        } // Loop over smeared MC particles, std::vector< bdm::SmearedMCParticle >
+        
+
+        // Initialize the map
+        auto& SmearedVisiblePx = Px[-2000000400]; auto& SmearedVisiblePy = Py[-2000000400]; auto& SmearedVisiblePz = Pz[-2000000400];
+        auto& SmearedVisibleP = P[-2000000400]; auto& SmearedVisibleE = E[-2000000400]; auto& SmearedVisibleAngle = Angle[-2000000400];
+        auto& SmearedVisibleNoNPx = Px[-2000000401]; auto& SmearedVisibleNoNPy = Py[-2000000401]; auto& SmearedVisibleNoNPz = Pz[-2000000401];
+        auto& SmearedVisibleNoNP = P[-2000000401]; auto& SmearedVisibleNoNE = E[-2000000401]; auto& SmearedVisibleNoNAngle = Angle[-2000000401];
+        auto& SmearedRecontablePx = Px[-2000000402]; auto& SmearedRecontablePy = Py[-2000000402]; auto& SmearedRecontablePz = Pz[-2000000402];
+        auto& SmearedRecontableP = P[-2000000402]; auto& SmearedRecontableE = E[-2000000402]; auto& SmearedRecontableAngle = Angle[-2000000402];
+        auto& SmearedRecontableNoNPx = Px[-2000000403]; auto& SmearedRecontableNoNPy = Py[-2000000403]; auto& SmearedRecontableNoNPz = Pz[-2000000403];
+        auto& SmearedRecontableNoNP = P[-2000000403]; auto& SmearedRecontableNoNE = E[-2000000403]; auto& SmearedRecontableNoNAngle = Angle[-2000000403];
+        auto& LeadingSmearedPx = Px[-2000000410]; auto& LeadingSmearedPy = Py[-2000000410]; auto& LeadingSmearedPz = Pz[-2000000410];
+        auto& LeadingSmearedP = P[-2000000410]; auto& LeadingSmearedE = E[-2000000410]; auto& LeadingSmearedAngle = Angle[-2000000410];
+        auto& LeadingSmearedNoNPx = Px[-2000000411]; auto& LeadingSmearedNoNPy = Py[-2000000411]; auto& LeadingSmearedNoNPz = Pz[-2000000411];
+        auto& LeadingSmearedNoNP = P[-2000000411]; auto& LeadingSmearedNoNE = E[-2000000411]; auto& LeadingSmearedNoNAngle = Angle[-2000000411];
+        auto& LeadingSmearedRecontablePx = Px[-2000000412]; auto& LeadingSmearedRecontablePy = Py[-2000000412]; auto& LeadingSmearedRecontablePz = Pz[-2000000412];
+        auto& LeadingSmearedRecontableP = P[-2000000412]; auto& LeadingSmearedRecontableE = E[-2000000412]; auto& LeadingSmearedRecontableAngle = Angle[-2000000412];
+        auto& LeadingSmearedRecontableNoNPx = Px[-2000000413]; auto& LeadingSmearedRecontableNoNPy = Py[-2000000413]; auto& LeadingSmearedRecontableNoNPz = Pz[-2000000413];
+        auto& LeadingSmearedRecontableNoNP = P[-2000000413]; auto& LeadingSmearedRecontableNoNE = E[-2000000413]; auto& LeadingSmearedRecontableNoNAngle = Angle[-2000000413];
+        auto& LeadingSmearedProtonPx = Px[-2000000414]; auto& LeadingSmearedProtonPy = Py[-2000000414]; auto& LeadingSmearedProtonPz = Pz[-2000000414];
+        auto& LeadingSmearedProtonP = P[-2000000414]; auto& LeadingSmearedProtonE = E[-2000000414]; auto& LeadingSmearedProtonAngle = Angle[-2000000414];
+        auto& LeadingSmearedRecontableProtonPx = Px[-2000000415]; auto& LeadingSmearedRecontableProtonPy = Py[-2000000415]; auto& LeadingSmearedRecontableProtonPz = Pz[-2000000415];
+        auto& LeadingSmearedRecontableProtonP = P[-2000000415]; auto& LeadingSmearedRecontableProtonE = E[-2000000415]; auto& LeadingSmearedRecontableProtonAngle = Angle[-2000000415];
+        
+        
+        ResizeKinematics( SmearedVisiblePx, SmearedVisiblePy, SmearedVisiblePz, SmearedVisibleP, SmearedVisibleE, SmearedVisibleAngle, 1 );
+        ResizeKinematics( SmearedVisibleNoNPx, SmearedVisibleNoNPy, SmearedVisibleNoNPz, SmearedVisibleNoNP, SmearedVisibleNoNE, SmearedVisibleNoNAngle, 1 );
+        ResizeKinematics( SmearedRecontablePx, SmearedRecontablePy, SmearedRecontablePz, SmearedRecontableP, SmearedRecontableE, SmearedRecontableAngle, 1 );
+        ResizeKinematics( SmearedRecontableNoNPx, SmearedRecontableNoNPy, SmearedRecontableNoNPz, SmearedRecontableNoNP, SmearedRecontableNoNE, SmearedRecontableNoNAngle, 1 );
+        ResizeKinematics( LeadingSmearedPx, LeadingSmearedPy, LeadingSmearedPz, LeadingSmearedP, LeadingSmearedE, LeadingSmearedAngle, 1 );
+        ResizeKinematics( LeadingSmearedNoNPx, LeadingSmearedNoNPy, LeadingSmearedNoNPz, LeadingSmearedNoNP, LeadingSmearedNoNE, LeadingSmearedNoNAngle, 1 );
+        ResizeKinematics( LeadingSmearedRecontablePx, LeadingSmearedRecontablePy, LeadingSmearedRecontablePz, LeadingSmearedRecontableP, LeadingSmearedRecontableE, LeadingSmearedRecontableAngle, 1 );
+        ResizeKinematics( LeadingSmearedRecontableNoNPx, LeadingSmearedRecontableNoNPy, LeadingSmearedRecontableNoNPz, LeadingSmearedRecontableNoNP, LeadingSmearedRecontableNoNE, LeadingSmearedRecontableNoNAngle, 1 );
+        ResizeKinematics( LeadingSmearedProtonPx, LeadingSmearedProtonPy, LeadingSmearedProtonPz, LeadingSmearedProtonP, LeadingSmearedProtonE, LeadingSmearedProtonAngle, 1 );
+        ResizeKinematics( LeadingSmearedRecontableProtonPx, LeadingSmearedRecontableProtonPy, LeadingSmearedRecontableProtonPz, LeadingSmearedRecontableProtonP, LeadingSmearedRecontableProtonE, LeadingSmearedRecontableProtonAngle, 1 );
+
+        
+        // Calculate the angle
+        std::vector< double > SmearedVisible3Vec = { SmearedVisible.X(), SmearedVisible.Y(), SmearedVisible.Z() };
+        std::vector< double > SmearedVisibleNoN3Vec = { SmearedVisibleNoN.X(), SmearedVisibleNoN.Y(), SmearedVisibleNoN.Z() };
+        std::vector< double > SmearedRecontable3Vec = { SmearedRecontable.X(), SmearedRecontable.Y(), SmearedRecontable.Z() };
+        std::vector< double > SmearedRecontableNoN3Vec = { SmearedRecontableNoN.X(), SmearedRecontableNoN.Y(), SmearedRecontableNoN.Z() };
+        std::vector< double > LeadingSmeared3Vec = { LeadingSmeared.X(), LeadingSmeared.Y(), LeadingSmeared.Z() };
+        std::vector< double > LeadingSmearedNoN3Vec = { LeadingSmearedNoN.X(), LeadingSmearedNoN.Y(), LeadingSmearedNoN.Z() };
+        std::vector< double > LeadingSmearedRecontable3Vec = { LeadingSmearedRecontable.X(), LeadingSmearedRecontable.Y(), LeadingSmearedRecontableNoN.Z() };
+        std::vector< double > LeadingSmearedRecontableNoN3Vec = { LeadingSmearedRecontableNoN.X(), LeadingSmearedRecontableNoN.Y(), LeadingSmearedRecontable.Z() };
+        std::vector< double > LeadingSmearedProton3Vec = { LeadingSmearedProton.X(), LeadingSmearedProton.Y(), LeadingSmearedProton.Z() };
+        std::vector< double > LeadingSmearedRecontableProton3Vec = { LeadingSmearedRecontableProton.X(), LeadingSmearedRecontableProton.Y(), LeadingSmearedRecontableProton.Z() };
+        
+        SmearedVisibleAngle[0] = CalculateAngle( InDMMom3Vec, SmearedVisible3Vec );
+        SmearedVisibleNoNAngle[0] = CalculateAngle( InDMMom3Vec, SmearedVisibleNoN3Vec );
+        SmearedRecontableAngle[0] = CalculateAngle( InDMMom3Vec, SmearedRecontable3Vec );
+        SmearedRecontableNoNAngle[0] = CalculateAngle( InDMMom3Vec, SmearedRecontableNoN3Vec );
+        LeadingSmearedAngle[0] = CalculateAngle( InDMMom3Vec, LeadingSmeared3Vec );
+        LeadingSmearedNoNAngle[0] = CalculateAngle( InDMMom3Vec, LeadingSmearedNoN3Vec );
+        LeadingSmearedRecontableAngle[0] = CalculateAngle( InDMMom3Vec, LeadingSmearedRecontable3Vec );
+        LeadingSmearedRecontableNoNAngle[0] = CalculateAngle( InDMMom3Vec, LeadingSmearedRecontableNoN3Vec );
+        LeadingSmearedProtonAngle[0] = CalculateAngle( InDMMom3Vec, LeadingSmearedProton3Vec );
+        LeadingSmearedRecontableProtonAngle[0] = CalculateAngle( InDMMom3Vec, LeadingSmearedRecontableProton3Vec );
+
+        
+        SmearedVisiblePx[0] = SmearedVisible.X();
+        SmearedVisiblePy[0] = SmearedVisible.Y();
+        SmearedVisiblePz[0] = SmearedVisible.Z();
+        SmearedVisibleP[0] = SmearedVisible.P();
+        SmearedVisibleE[0] = SmearedVisible.E();
+        
+        SmearedVisibleNoNPx[0] = SmearedVisibleNoN.X();
+        SmearedVisibleNoNPy[0] = SmearedVisibleNoN.Y();
+        SmearedVisibleNoNPz[0] = SmearedVisibleNoN.Z();
+        SmearedVisibleNoNP[0] = SmearedVisibleNoN.P();
+        SmearedVisibleNoNE[0] = SmearedVisibleNoN.E();
+        
+        SmearedRecontablePx[0] = SmearedRecontable.X();
+        SmearedRecontablePy[0] = SmearedRecontable.Y();
+        SmearedRecontablePz[0] = SmearedRecontable.Z();
+        SmearedRecontableP[0] = SmearedRecontable.P();
+        SmearedRecontableE[0] = SmearedRecontable.E();
+        
+        SmearedRecontableNoNPx[0] = SmearedRecontableNoN.X();
+        SmearedRecontableNoNPy[0] = SmearedRecontableNoN.Y();
+        SmearedRecontableNoNPz[0] = SmearedRecontableNoN.Z();
+        SmearedRecontableNoNP[0] = SmearedRecontableNoN.P();
+        SmearedRecontableNoNE[0] = SmearedRecontableNoN.E();
+        
+        LeadingSmearedPx[0] = LeadingSmeared.X();
+        LeadingSmearedPy[0] = LeadingSmeared.Y();
+        LeadingSmearedPz[0] = LeadingSmeared.Z();
+        LeadingSmearedP[0] = LeadingSmeared.P();
+        LeadingSmearedE[0] = LeadingSmeared.E();
+        
+        LeadingSmearedNoNPx[0] = LeadingSmearedNoN.X();
+        LeadingSmearedNoNPy[0] = LeadingSmearedNoN.Y();
+        LeadingSmearedNoNPz[0] = LeadingSmearedNoN.Z();
+        LeadingSmearedNoNP[0] = LeadingSmearedNoN.P();
+        LeadingSmearedNoNE[0] = LeadingSmearedNoN.E();
+        
+        LeadingSmearedRecontablePx[0] = LeadingSmearedRecontable.X();
+        LeadingSmearedRecontablePy[0] = LeadingSmearedRecontable.Y();
+        LeadingSmearedRecontablePz[0] = LeadingSmearedRecontable.Z();
+        LeadingSmearedRecontableP[0] = LeadingSmearedRecontable.P();
+        LeadingSmearedRecontableE[0] = LeadingSmearedRecontable.E();
+        
+        LeadingSmearedRecontableNoNPx[0] = LeadingSmearedRecontableNoN.X();
+        LeadingSmearedRecontableNoNPy[0] = LeadingSmearedRecontableNoN.Y();
+        LeadingSmearedRecontableNoNPz[0] = LeadingSmearedRecontableNoN.Z();
+        LeadingSmearedRecontableNoNP[0] = LeadingSmearedRecontableNoN.P();
+        LeadingSmearedRecontableNoNE[0] = LeadingSmearedRecontableNoN.E();
+        
+        LeadingSmearedProtonPx[0] = LeadingSmearedProton.X();
+        LeadingSmearedProtonPy[0] = LeadingSmearedProton.Y();
+        LeadingSmearedProtonPz[0] = LeadingSmearedProton.Z();
+        LeadingSmearedProtonP[0] = LeadingSmearedProton.P();
+        LeadingSmearedProtonE[0] = LeadingSmearedProton.E();
+        
+        LeadingSmearedRecontableProtonPx[0] = LeadingSmearedRecontableProton.X();
+        LeadingSmearedRecontableProtonPy[0] = LeadingSmearedRecontableProton.Y();
+        LeadingSmearedRecontableProtonPz[0] = LeadingSmearedRecontableProton.Z();
+        LeadingSmearedRecontableProtonP[0] = LeadingSmearedRecontableProton.P();
+        LeadingSmearedRecontableProtonE[0] = LeadingSmearedRecontableProton.E();
+        
+        
+        
+        
         fTree->Fill();
     } // End of an event
     fOut->Write();
