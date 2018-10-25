@@ -14,12 +14,14 @@ CPPFLAGS=-I $(BOOST_INC) \
          -I $(LARCOREALG_INC) \
          -I $(BOOSTEDDMANALYSIS_INC) \
          -I $(NUSIMDATA_INC) \
+         -I $(CLHEP_INC) \
          -I $(ROOT_INC)
 
 CXXFLAGS=-std=c++17 -Wall -Werror -pedantic
 CXX=clang++
 LDFLAGS=$$(root-config --libs) \
         -l GenVector \
+        -L $(CLHEP_LIB_DIR) -l CLHEP-Random-2.3.4.6 \
         -L $(CANVAS_LIB) -l canvas \
         -L $(CANVAS_ROOT_IO_LIB) -l canvas_root_io \
         -L $(CETLIB_LIB) -l cetlib \
@@ -31,7 +33,7 @@ LDFLAGS=$$(root-config --libs) \
         -L $(LARCOREALG_LIB) -l larcorealg_Geometry \
         -L $(BOOSTEDDMANALYSIS_LIB) -l boosteddmanalysis_DataObjects
 
-all: MCTruthDistributions MCParticleDistributions CheckMCTruthMCParticle MCDistributions
+all: MCTruthDistributions MCParticleDistributions CheckMCTruthMCParticle MCDistributions BkgdDistributions
 
 MCTruthDistributions: MCTruthDistributions.cc
 	@$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -o $@ $<
@@ -45,4 +47,8 @@ CheckMCTruthMCParticle: CheckMCTruthMCParticle.cc
 MCDistributions: MCDistributions.cc
 	@$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -o $@ $<
 
-clean: rm *.o MCTruthDistributions MCParticleDistributions CheckMCTruthMCParticle MCDistributions
+BlgdDistributions: BkgdDistributions.cc
+	@$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -o $@ $<
+
+	
+clean: rm *.o MCTruthDistributions MCParticleDistributions CheckMCTruthMCParticle MCDistributions BkgdDistributions
