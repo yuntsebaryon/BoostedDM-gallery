@@ -414,6 +414,8 @@ int main( int argc, char ** argv ) {
 
     std::vector< std::string > Filenames;
     Filenames.push_back( argv[1] );
+    
+    std::string outFilename( argv[2] );
 
     std::string GenLabel = "dk2nu";
     std::string G4Label = "largeant";
@@ -425,7 +427,7 @@ int main( int argc, char ** argv ) {
     art::InputTag SmearedMCTag { SmearedMCLabel };
 
     
-    TFile *fOut = new TFile( "SmearedMCParticles.root", "RECREATE" );
+    TFile *fOut = new TFile( outFilename.c_str(), "RECREATE" );
     TTree *fTree = new TTree( "MCParticles", "Primary MC particles and smeared stable final state particles" );
 
     CounterMap_t Multiplicity;
