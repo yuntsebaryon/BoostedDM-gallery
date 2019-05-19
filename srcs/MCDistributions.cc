@@ -3,7 +3,8 @@
  * @brief   Create a TTree filling with the 4-momenta of the initial and final state particles of the dark matter particle-argon interaction
  * @date    August 7, 2018
  * @author  Yun-Tse Tsai (yuntse@slac.stanford.edu), Dane Stocks (dstocks@stanford.edu)
- * @version v1.0
+ * @update  May 10, 2019.  Allow to deal with both the signal and background events
+ * @version v2.0
  *
  * Currently we assume there is only one interaction, which is a DM-Argon interaction, in each event.
  * Therefore there should be only one MCTruth object in each event.
@@ -18,6 +19,7 @@
 #include <vector>
 #include <map>
 #include <cmath>
+#include <fstream>
 // #include <cassert>
 
 // some ROOT includes
@@ -29,6 +31,11 @@
 #include "TLorentzVector.h"
 #include "Math/GenVector/PxPyPzE4D.h"
 //#include "Math/GenVector/LorentzVector.h"
+#include "Math/GenVector/DisplacementVector3D.h"
+
+// CLHEP libraries
+#include "CLHEP/Random/JamesRandom.h"
+#include "CLHEP/Random/RandFlat.h"
 
 // "art" includes (canvas, and gallery)
 #include "canvas/Utilities/InputTag.h"
@@ -53,6 +60,7 @@ using CounterMap_t = std::map< int, unsigned int >;
 using KinematicMap_t = std::map< int, std::vector< double > >;
 
 using Momentum4_t = ROOT::Math::LorentzVector< ROOT::Math::PxPyPzE4D< double > >;
+using Momentum3_t = ROOT::Math::DisplacementVector3D< ROOT::Math::Cartesian3D< double > >;
 
 void SetParticleTypes( std::vector< int >& ParticleTypes ) {
 
@@ -96,7 +104,7 @@ void SetParticleTypes( std::vector< int >& ParticleTypes ) {
     
 }
 
-void ResetCounters( CounterMap_t& Multiplicity, KinematicMap_t& Px, KinematicMap_t& Py, KinematicMap_t& Pz, KinematicMap_t& P, KinematicMap_t& E, KinematicMap_t& Angle ) {
+void ResetCounters( CounterMap_t& Multiplicity, KinematicMap_t& Px, KinematicMap_t& Py, KinematicMap_t& Pz, KinematicMap_t& P, KinematicMap_t& E, KinematicMap_t& Angle, double& SunPx, double& SunPy, double& SunPz, double& VtxX, double& VtxY, double& VtxZ, double& T0 ) {
 
     std::vector< int > ParticleTypes;
     SetParticleTypes( ParticleTypes );
@@ -111,6 +119,8 @@ void ResetCounters( CounterMap_t& Multiplicity, KinematicMap_t& Px, KinematicMap
         E[type].clear();
         Angle[type].clear();
     }
+    SunPx = 0.; SunPy = 0.; SunPz = 0.;
+    VtxX = 0.; VtxY = 0.; VtxZ = 0.; T0 = 0.;
 }
 
 void ResizeKinematics( std::vector< double >& Px, std::vector< double >& Py, std::vector< double >& Pz, std::vector< double >& P, std::vector< double >& E, std::vector< double >& Angle, size_t n ) {
@@ -147,10 +157,20 @@ double CalculateAngle( std::vector< double > vec1, std::vector< double > vec2 ) 
   }
 }
 
-void InitTree( TTree* pTree, CounterMap_t& Multiplicity, KinematicMap_t& Px, KinematicMap_t& Py, KinematicMap_t& Pz, KinematicMap_t& P, KinematicMap_t& E, KinematicMap_t& Angle, simb::Origin_t& EventOrigin, int& Mode, int& InteractionType, int& CCNC ) {
+double CalculateAngle( Momentum3_t v1, Momentum3_t v2 ) {
+  
+  double v1dotv2 = v1.Dot( v2 );
+  double cosTheta = v1dotv2 / ( v1.R() * v2.R() );
+  return acos( cosTheta );
+}
 
-    ResetCounters( Multiplicity, Px, Py, Pz, P, E, Angle );
+void InitTree( TTree* pTree, CounterMap_t& Multiplicity, KinematicMap_t& Px, KinematicMap_t& Py, KinematicMap_t& Pz, KinematicMap_t& P, KinematicMap_t& E, KinematicMap_t& Angle, int& run, int& event, simb::Origin_t& EventOrigin, int& Mode, int& InteractionType, int& CCNC, int& isIn10kton, double& SunPx, double& SunPy, double& SunPz, double& VtxX, double& VtxY, double& VtxZ, double& T0 ) {
 
+    ResetCounters( Multiplicity, Px, Py, Pz, P, E, Angle, SunPx, SunPy, SunPz, VtxX, VtxY, VtxZ, T0 );
+
+    pTree->Branch( "Run", &run );
+    pTree->Branch( "Event", &event );
+    
     // Event origin: neutrino, cosmics, etc.
     pTree->Branch( "EventOrigin", &EventOrigin );
     // Interaction mode
@@ -159,6 +179,14 @@ void InitTree( TTree* pTree, CounterMap_t& Multiplicity, KinematicMap_t& Px, Kin
     pTree->Branch( "InteractionType", &InteractionType );
     // CC or NC
     pTree->Branch( "CCNC", &CCNC );
+    
+    // Whether the event is in the 10k ton volumn
+    pTree->Branch( "isIn10kton", &isIn10kton );
+
+    // Sun position
+    pTree->Branch( "SunPx", &SunPx );
+    pTree->Branch( "SunPy", &SunPy );
+    pTree->Branch( "SunPz", &SunPz );
 
     // Use the index "0" for the event-wide four-momentum
     pTree->Branch( "EventPx", &Px[0] );
@@ -168,6 +196,12 @@ void InitTree( TTree* pTree, CounterMap_t& Multiplicity, KinematicMap_t& Px, Kin
     pTree->Branch( "EventE", &E[0] );
     pTree->Branch( "EventAngle", &Angle[0] );
 
+    // Interaction vertex position and time
+    pTree->Branch( "VertexX", &VtxX );
+    pTree->Branch( "VertexY", &VtxY );
+    pTree->Branch( "VertexZ", &VtxZ );
+    pTree->Branch( "T0", &T0 );
+    
     pTree->Branch( "VisiblePx", &Px[2000000400] );
     pTree->Branch( "VisiblePy", &Py[2000000400] );
     pTree->Branch( "VisiblePz", &Pz[2000000400] );
@@ -285,9 +319,11 @@ void InitTree( TTree* pTree, CounterMap_t& Multiplicity, KinematicMap_t& Px, Kin
     pTree->Branch( "nAr40", &Multiplicity[1000180400], "nAr40/i" );
     pTree->Branch( "nAr39", &Multiplicity[1000180390], "nAr39/i" );
     pTree->Branch( "nCl39", &Multiplicity[1000170390], "nCl39/i" );
-    pTree->Branch( "nInDMs", &Multiplicity[-2000010000], "nInDMs/i" );
-    pTree->Branch( "nOutDMs", &Multiplicity[2000010000], "nOutDMs/i" );
+    pTree->Branch( "nInParticles", &Multiplicity[-2000010000], "nInPaticles/i" );
+    pTree->Branch( "nOutParticles", &Multiplicity[2000010000], "nOutParticles/i" );
     pTree->Branch( "nGENIE", &Multiplicity[2000000000], "nGENIE/i" );
+    pTree->Branch( "nVisible", &Multiplicity[2000000400], "nVisible/i" );
+    pTree->Branch( "nVisibleNoN", &Multiplicity[2000000401], "nVisibleNoN/i" );
     pTree->Branch( "nSelProtons", &Multiplicity[-2212], "nSelProtons/i" );
     pTree->Branch( "nSelNeutrons", &Multiplicity[-2112], "nSelNeutrons/i" );
     pTree->Branch( "nSelPions", &Multiplicity[-211], "nSelPions/i" );
@@ -311,8 +347,8 @@ void InitTree( TTree* pTree, CounterMap_t& Multiplicity, KinematicMap_t& Px, Kin
     pTree->Branch( "Ar40Px", &Px[1000180400] );
     pTree->Branch( "Ar39Px", &Px[1000180390] );
     pTree->Branch( "Cl39Px", &Px[1000170390] );
-    pTree->Branch( "InDMPx", &Px[-2000010000] );
-    pTree->Branch( "OutDMPx", &Px[2000010000] );
+    pTree->Branch( "InParticlePx", &Px[-2000010000] );
+    pTree->Branch( "OutPariclePx", &Px[2000010000] );
     pTree->Branch( "GENIEPx", &Px[2000000000] );
     pTree->Branch( "SmearedProtonPx", &Px[-2212] );
     pTree->Branch( "SmearedNeutronPx", &Px[-2112] );
@@ -329,8 +365,8 @@ void InitTree( TTree* pTree, CounterMap_t& Multiplicity, KinematicMap_t& Px, Kin
     pTree->Branch( "Ar40Py", &Py[1000180400] );
     pTree->Branch( "Ar39Py", &Py[1000180390] );
     pTree->Branch( "Cl39Py", &Py[1000170390] );
-    pTree->Branch( "InDMPy", &Py[-2000010000] );
-    pTree->Branch( "OutDMPy", &Py[2000010000] );
+    pTree->Branch( "InParticlePy", &Py[-2000010000] );
+    pTree->Branch( "OutParticlePy", &Py[2000010000] );
     pTree->Branch( "GENIEPy", &Py[2000000000] );
     pTree->Branch( "SmearedProtonPy", &Py[-2212] );
     pTree->Branch( "SmearedNeutronPy", &Py[-2112] );
@@ -347,8 +383,8 @@ void InitTree( TTree* pTree, CounterMap_t& Multiplicity, KinematicMap_t& Px, Kin
     pTree->Branch( "Ar40Pz", &Pz[1000180400] );
     pTree->Branch( "Ar39Pz", &Pz[1000180390] );
     pTree->Branch( "Cl39Pz", &Pz[1000170390] );
-    pTree->Branch( "InDMPz", &Pz[-2000010000] );
-    pTree->Branch( "OutDMPz", &Pz[2000010000] );
+    pTree->Branch( "InParticlePz", &Pz[-2000010000] );
+    pTree->Branch( "OutParticlePz", &Pz[2000010000] );
     pTree->Branch( "GENIEPz", &Pz[2000000000] );
     pTree->Branch( "SmearedProtonPz", &Pz[-2212] );
     pTree->Branch( "SmearedNeutronPz", &Pz[-2112] );
@@ -365,8 +401,8 @@ void InitTree( TTree* pTree, CounterMap_t& Multiplicity, KinematicMap_t& Px, Kin
     pTree->Branch( "Ar40P", &P[1000180400] );
     pTree->Branch( "Ar39P", &P[1000180390] );
     pTree->Branch( "Cl39P", &P[1000170390] );
-    pTree->Branch( "InDMP", &P[-2000010000] );
-    pTree->Branch( "OutDMP", &P[2000010000] );
+    pTree->Branch( "InParticleP", &P[-2000010000] );
+    pTree->Branch( "OutParticleP", &P[2000010000] );
     pTree->Branch( "GENIEP", &P[2000000000] );
     pTree->Branch( "SmearedProtonP", &P[-2212] );
     pTree->Branch( "SmearedNeutronP", &P[-2112] );
@@ -383,8 +419,8 @@ void InitTree( TTree* pTree, CounterMap_t& Multiplicity, KinematicMap_t& Px, Kin
     pTree->Branch( "Ar40E", &E[1000180400] );
     pTree->Branch( "Ar39E", &E[1000180390] );
     pTree->Branch( "Cl39E", &E[1000170390] );
-    pTree->Branch( "InDME", &E[-2000010000] );
-    pTree->Branch( "OutDME", &E[2000010000] );
+    pTree->Branch( "InParticleE", &E[-2000010000] );
+    pTree->Branch( "OutParticleE", &E[2000010000] );
     pTree->Branch( "GENIEE", &E[2000000000] );
     pTree->Branch( "SmearedProtonE", &E[-2212] );
     pTree->Branch( "SmearedNeutronE", &E[-2112] );
@@ -398,8 +434,8 @@ void InitTree( TTree* pTree, CounterMap_t& Multiplicity, KinematicMap_t& Px, Kin
     pTree->Branch( "Pi0Angle", &Angle[111] );
     pTree->Branch( "MesonAngle", &Angle[300] );
     pTree->Branch( "BaryonAngle", &Angle[3000] );
-    pTree->Branch( "InDMAngle", &Angle[-2000010000] );
-    pTree->Branch( "OutDMAngle", &Angle[2000010000] );
+    pTree->Branch( "InParticleAngle", &Angle[-2000010000] );
+    pTree->Branch( "OutParticleAngle", &Angle[2000010000] );
     pTree->Branch( "GENIEAngle", &Angle[2000000000] );
     pTree->Branch( "SmearedProtonAngle", &Angle[-2212] );
     pTree->Branch( "SmearedNeutronAngle", &Angle[-2112] );
@@ -409,6 +445,27 @@ void InitTree( TTree* pTree, CounterMap_t& Multiplicity, KinematicMap_t& Px, Kin
     pTree->Branch( "SmearedPhotonAngle", &Angle[-22] );   
 }
 
+std::vector< Momentum3_t > LoadSunPositions( std::string SunFilename ) {
+
+  std::ifstream SunFile( SunFilename );
+  if ( !SunFile.is_open() ) throw std::runtime_error( "Can't open file '" + SunFilename + "'" );
+  
+  double x, y, z;
+  unsigned int iLine = 0;
+  std::vector< Momentum3_t > SunPositions;
+  
+  while ( SunFile ) {
+    ++iLine;
+    SunFile >> x >> y >> z;
+    if ( SunFile.eof() ) break;
+    if ( SunFile.fail() ) throw std::runtime_error( "Can't read x, y or z at line " + std::to_string( iLine ) );
+    Momentum3_t SunPos( x, y, z );
+    SunPositions.push_back( SunPos );
+  }
+  std::cout << "Read " << iLine << " lines from '" << SunFilename << "'" << std::endl;
+  
+  return SunPositions;
+}
 
 int main( int argc, char ** argv ) {
 
@@ -417,7 +474,33 @@ int main( int argc, char ** argv ) {
     
     std::string outFilename( argv[2] );
 
+    bool isBDM = true;
+    if ( argc > 3 ) {
+      std::string sampleType( argv[3] );
+      if ( sampleType.find("background") || sampleType.find("neutrino") ) isBDM = false;
+    }
+    
+    if ( argc < 4 && !isBDM ) {
+      std::cerr << "Need the sun position input for the atmospheric neutrino events!" << std::endl;
+      return 1;
+    }
+    
+    std::string SunFilename;
+    std::vector< Momentum3_t > SunPositions;
+    if ( !isBDM ) {
+      SunFilename = std::string( argv[4] );
+      // std::cout << "Sun position file: " << SunFilename << std::endl;
+      SunPositions = LoadSunPositions( SunFilename );
+      // std::cout << "Number of sun positions: " << SunPositions.size();
+      // std::cout << "1st: ( " << SunPositions[0].X() << ", " << SunPositions[0].Y() << ", " << SunPositions[0].Z() << " )" << std::endl;
+      // std::cout << "2nd: ( " << SunPositions[1].X() << ", " << SunPositions[1].Y() << ", " << SunPositions[1].Z() << " )" << std::endl;
+      // std::cout << "3rd: ( " << SunPositions[2].X() << ", " << SunPositions[2].Y() << ", " << SunPositions[2].Z() << " )" << std::endl;
+      // std::cout << "4th: ( " << SunPositions[3].X() << ", " << SunPositions[3].Y() << ", " << SunPositions[3].Z() << " )" << std::endl;
+    }
+    
     std::string GenLabel = "dk2nu";
+    if ( !isBDM ) GenLabel = "generator";
+
     std::string G4Label = "largeant";
     // std::string SelMCLabel = "selector";
     std::string SmearedMCLabel = "smear";
@@ -433,18 +516,37 @@ int main( int argc, char ** argv ) {
     CounterMap_t Multiplicity;
     KinematicMap_t Px, Py, Pz, P, E, Angle;
     simb::Origin_t EventOrigin;
-    int Mode, InteractionType, CCNC;
+    int run, event, Mode, InteractionType, CCNC, isIn10kton;
+    double SunPx, SunPy, SunPz, VtxX, VtxY, VtxZ, T0;
+    int nIn10kton = 0;
+    
+    InitTree( fTree, Multiplicity, Px, Py, Pz, P, E, Angle, run, event, EventOrigin, Mode, InteractionType, CCNC, isIn10kton, SunPx, SunPy, SunPz, VtxX, VtxY, VtxZ, T0 );
 
-    InitTree( fTree, Multiplicity, Px, Py, Pz, P, E, Angle, EventOrigin, Mode, InteractionType, CCNC );
-
+    // Random engine for picking an entry for the sun position
+    int RandMax = SunPositions.size();
+    CLHEP::HepJamesRandom engine;
+    CLHEP::RandFlat flat( engine, 0, RandMax );
+    
     for ( gallery::Event ev( Filenames ); !ev.atEnd(); ev.next() ) {
 
         // for ( auto& multPair: Multiplicity ) multPair.second = 0;
-        ResetCounters( Multiplicity, Px, Py, Pz, P, E, Angle );
-
+        ResetCounters( Multiplicity, Px, Py, Pz, P, E, Angle, SunPx, SunPy, SunPz, VtxX, VtxY, VtxZ, T0 );
+        run = ev.eventAuxiliary().run();
+        event = ev.eventAuxiliary().event();
+        
         std::cout << "Processing "
-                  << "Run " << ev.eventAuxiliary().run() << ", "
-                  << "Event " << ev.eventAuxiliary().event() << std::endl;
+                  << "Run " << run << ", "
+                  << "Event " << event << std::endl;
+
+        // In the background events, the sun position should be the same in the entire events.
+        // It should be the same for the signal events as well, but we obtain the sun position of the signal BDM events from the incoming direction of the BDM, and therefore will be filled later.
+        Momentum3_t SunPosition;
+        if ( !isBDM ) {
+          double randnumber = flat();
+          int iSunPosition = floor( randnumber );
+          SunPosition = SunPositions[iSunPosition];
+        
+        }
 
         auto const& MCTruthHandle = ev.getValidHandle< std::vector< simb::MCTruth > >( MCTruthTag );
         auto const& MCTruthObjs = *MCTruthHandle;
@@ -463,19 +565,19 @@ int main( int argc, char ** argv ) {
 
         // Access the element of the map directly
         auto& nAllParticles = Multiplicity[0];
-        auto& nInDM = Multiplicity[-2000010000];
+        auto& nInParticles = Multiplicity[-2000010000];
         auto& nVisible = Multiplicity[2000000400];
         auto& nVisibleNoN = Multiplicity[2000000401];
 
         // Initialize the incident DM particle.
         // Currently allow only one DM-Argon interaction in an event
-        auto& InDMPx = Px[-2000010000]; auto& InDMPy = Py[-2000010000]; auto& InDMPz = Pz[-2000010000];
-        auto& InDMP = P[-2000010000]; auto& InDME = E[-2000010000]; auto& InDMAngle = Angle[-2000010000];
-        ResizeKinematics( InDMPx, InDMPy, InDMPz, InDMP, InDME, InDMAngle, 1 );
+        auto& InParticlePx = Px[-2000010000]; auto& InParticlePy = Py[-2000010000]; auto& InParticlePz = Pz[-2000010000];
+        auto& InParticleP = P[-2000010000]; auto& InParticleE = E[-2000010000]; auto& InParticleAngle = Angle[-2000010000];
+        ResizeKinematics( InParticlePx, InParticlePy, InParticlePz, InParticleP, InParticleE, InParticleAngle, 1 );
 
-        auto& OutDMPx = Px[2000010000]; auto& OutDMPy = Py[2000010000]; auto& OutDMPz = Pz[2000010000];
-        auto& OutDMP = P[2000010000]; auto& OutDME = E[2000010000]; auto& OutDMAngle = Angle[2000010000];
-        ResizeKinematics( OutDMPx, OutDMPy, OutDMPz, OutDMP, OutDME, OutDMAngle, 1 );
+        auto& OutParticlePx = Px[2000010000]; auto& OutParticlePy = Py[2000010000]; auto& OutParticlePz = Pz[2000010000];
+        auto& OutParticleP = P[2000010000]; auto& OutParticleE = E[2000010000]; auto& OutParticleAngle = Angle[2000010000];
+        ResizeKinematics( OutParticlePx, OutParticlePy, OutParticlePz, OutParticleP, OutParticleE, OutParticleAngle, 1 );
 
         auto& Ar40Px = Px[1000180400]; auto& Ar40Py = Py[1000180400]; auto& Ar40Pz = Pz[1000180400];
         auto& Ar40P = P[1000180400]; auto& Ar40E = E[1000180400]; auto& Ar40Angle = Angle[1000180400];
@@ -533,33 +635,43 @@ int main( int argc, char ** argv ) {
             }
 
             // The incident DM particle is stored in the neutrino container in the MCTruth
-            simb::MCNeutrino const& InDMObj = MCTruthObj.GetNeutrino();
-            simb::MCParticle const& InDM    = InDMObj.Nu();
+            simb::MCNeutrino const& InParticleObj = MCTruthObj.GetNeutrino();
+            simb::MCParticle const& InParticle    = InParticleObj.Nu();
 
             // Skip the loop in the case that the incident particle is not a DM particle
-            if ( InDM.PdgCode() != 2000010000 ) {
+            if ( isBDM && InParticle.PdgCode() != 2000010000 ) {
                 std::cout << "The incident particle in the MCTruth " << iMCTruth << " is a neutrino, skip the interaction..." << std::endl;
                 continue;
             }
 
             // Currently deal with only one DM-Argon interaction in an event
-            if ( nInDM > 0 ) {
+            if ( nInParticles > 0 ) {
                 std::cout << "Found more than 1 DM-Argon interaction in the event!" << std::endl;
                 continue;
             }
 
             // Interaction information
-            Mode = InDMObj.Mode();
-            InteractionType = InDMObj.InteractionType();
-            CCNC = InDMObj.CCNC();
+            Mode = InParticleObj.Mode();
+            InteractionType = InParticleObj.InteractionType();
+            CCNC = InParticleObj.CCNC();
 
+            // Position of the vertex
+            const auto Position = geo::vect::convertTo< Momentum4_t >( InParticle.Position() );
+            VtxX = Position.X(); VtxY = Position.Y(); VtxZ = Position.Z(); T0 = Position.T();
+            if ( abs( VtxX ) <= 745.744+1.e-12 && abs( VtxY ) <= 600.019+1.e-12 && VtxZ >= -0.87625-1.e-12 && VtxZ <= 5808.87+1.e-12 ) {
+              isIn10kton = 1;
+              ++nIn10kton;
+            } else isIn10kton = 0;
+            
             // 4-momentum of the incident DM particle
-            const auto InDMMom = geo::vect::convertTo< Momentum4_t >( InDM.Momentum() );
-            Event += InDMMom;
+            const auto InParticleMom = geo::vect::convertTo< Momentum4_t >( InParticle.Momentum() );
+            Event += InParticleMom;
 
-            InDMPx[0] = InDM.Px(); InDMPy[0] = InDM.Py(); InDMPz[0] = InDM.Pz();
-            InDMP[0] = InDM.P(); InDME[0] = InDM.E(); InDMAngle[0] = 0.;
-            std::vector< double > InDMMom3Vec = { InDMMom.Px(), InDMMom.Py(), InDMMom.Pz() };
+            Momentum3_t InParticleMom3( InParticleMom.Px(), InParticleMom.Py(), InParticleMom.Pz() );
+            InParticlePx[0] = InParticle.Px(); InParticlePy[0] = InParticle.Py(); InParticlePz[0] = InParticle.Pz();
+            InParticleP[0] = InParticle.P(); InParticleE[0] = InParticle.E(); InParticleAngle[0] = 0.;
+            if ( isBDM ) SunPosition = InParticleMom3;
+            SunPx = SunPosition.X(); SunPy = SunPosition.Y(); SunPz = SunPosition.Z();
 
             // Now look for the initial argon 4-momentum and assign outgoing (final state) DM kinematic values
             for ( size_t iMCParticle = 0; iMCParticle < MCTruthObj.NParticles(); ++iMCParticle ) {
@@ -567,12 +679,16 @@ int main( int argc, char ** argv ) {
                 const simb::MCParticle& thisMCParticle = MCTruthObj.GetParticle( iMCParticle );
                 if ( thisMCParticle.StatusCode() == 1 && thisMCParticle.PdgCode() == 2000010000 ) {
                     const auto Momentum = geo::vect::convertTo< Momentum4_t >( thisMCParticle.Momentum() );
-                    OutDMPx[0] = Momentum.Px(); OutDMPy[0] = Momentum.Py(); OutDMPz[0] = Momentum.Pz();
-                    OutDMP[0] = Momentum.P(); OutDME[0] = Momentum.E();
+                    OutParticlePx[0] = Momentum.Px(); OutParticlePy[0] = Momentum.Py(); OutParticlePz[0] = Momentum.Pz();
+                    OutParticleP[0] = Momentum.P(); OutParticleE[0] = Momentum.E();
+                } else if ( !isBDM && thisMCParticle.StatusCode() == 1 && ( abs(thisMCParticle.PdgCode() ) == 12 ||abs(thisMCParticle.PdgCode() ) == 14 ) ) {
+                    const auto Momentum = geo::vect::convertTo< Momentum4_t >( thisMCParticle.Momentum() );
+                    OutParticlePx[0] = Momentum.Px(); OutParticlePy[0] = Momentum.Py(); OutParticlePz[0] = Momentum.Pz();
+                    OutParticleP[0] = Momentum.P(); OutParticleE[0] = Momentum.E();
                 } else if ( thisMCParticle.StatusCode() == 1 ) continue;
                 // The incident DM particle has been filled
                 if ( thisMCParticle.StatusCode() == 0 ) {
-                    if ( thisMCParticle.PdgCode() == 2000010000 ) continue;
+                    if ( thisMCParticle.PdgCode() == 2000010000 || abs( thisMCParticle.PdgCode() ) == 12 || abs( thisMCParticle.PdgCode() ) == 14 ) continue;
                     Event += geo::vect::convertTo< Momentum4_t >( thisMCParticle.Momentum() );
                     
                     // (Dane) adding in block to assign initial Ar40 Px, Py, Pz, E, etc.
@@ -582,8 +698,8 @@ int main( int argc, char ** argv ) {
                 }
             }
 
-            std::vector< double > OutDMMom3Vec = { OutDMPx[0], OutDMPy[0], OutDMPz[0] };
-            OutDMAngle[0] = CalculateAngle( InDMMom3Vec, OutDMMom3Vec );
+            Momentum3_t OutParticleMom3( OutParticlePx[0], OutParticlePy[0], OutParticlePz[0] );
+            OutParticleAngle[0] = CalculateAngle( SunPosition, OutParticleMom3 );
 
             
             // Find all the (stable final state) MCParticles associated to the MCTruth object
@@ -616,8 +732,8 @@ int main( int argc, char ** argv ) {
                     GENIEP[nGENIE] = thisMCParticle->P();
                     GENIEE[nGENIE] = thisMCParticle->E();
 
-                    std::vector< double > GENIEP3Vec = { GENIEPx[nGENIE], GENIEPy[nGENIE], GENIEPz[nGENIE] };
-                    GENIEAngle[nGENIE] = CalculateAngle(InDMMom3Vec, GENIEP3Vec);
+                    Momentum3_t GENIEMom3( GENIEPx[nGENIE], GENIEPy[nGENIE], GENIEPz[nGENIE] );
+                    GENIEAngle[nGENIE] = CalculateAngle( SunPosition, GENIEMom3 );
 
                     ++nGENIE;
                     ++nAllParticles;
@@ -633,8 +749,8 @@ int main( int argc, char ** argv ) {
                     MesonP[nMesons] = thisMCParticle->P();
                     MesonE[nMesons] = thisMCParticle->E();
 
-                    std::vector< double > MesonP3Vec = { MesonPx[nMesons], MesonPy[nMesons], MesonPz[nMesons] };
-                    MesonAngle[nMesons] = CalculateAngle(InDMMom3Vec, MesonP3Vec);
+                    Momentum3_t MesonMom3( MesonPx[nMesons], MesonPy[nMesons], MesonPz[nMesons] );
+                    MesonAngle[nMesons] = CalculateAngle( SunPosition, MesonMom3 );
 
                     Visible += Momentum;
                     VisibleNoN += Momentum;
@@ -663,8 +779,8 @@ int main( int argc, char ** argv ) {
                     BaryonP[nBaryons] = thisMCParticle->P();
                     BaryonE[nBaryons] = thisMCParticle->E();
 
-                    std::vector< double > BaryonP3Vec = { BaryonPx[nBaryons], BaryonPy[nBaryons], BaryonPz[nBaryons] };
-                    BaryonAngle[nBaryons] = CalculateAngle(InDMMom3Vec, BaryonP3Vec);
+                    Momentum3_t BaryonMom3( BaryonPx[nBaryons], BaryonPy[nBaryons], BaryonPz[nBaryons] );
+                    BaryonAngle[nBaryons] = CalculateAngle( SunPosition, BaryonMom3 );
 
                     Visible += Momentum;
                     VisibleNoN += Momentum;
@@ -698,13 +814,13 @@ int main( int argc, char ** argv ) {
                     ParticleP[nParticles] = thisMCParticle->P();
                     ParticleE[nParticles] = thisMCParticle->E();
 
-                    std::vector< double > ParticleP3Vec = { ParticlePx[nParticles], ParticlePy[nParticles], ParticlePz[nParticles] };
-                    ParticleAngle[nParticles] = CalculateAngle(InDMMom3Vec, ParticleP3Vec);
+                    Momentum3_t ParticleMom3( ParticlePx[nParticles], ParticlePy[nParticles], ParticlePz[nParticles] );
+                    ParticleAngle[nParticles] = CalculateAngle( SunPosition, ParticleMom3 );
 
                     ++nParticles;
                     ++nAllParticles;
 
-                    if ( pdgCode == 2000010000 ) continue;
+                    if ( pdgCode == 2000010000 || abs( pdgCode ) == 12 || abs( pdgCode ) == 14 ) continue;
                     Visible += Momentum;
                     if ( Momentum.P() > LeadingParticleMax ) {
                         LeadingParticle = Momentum;
@@ -732,12 +848,12 @@ int main( int argc, char ** argv ) {
         // calculate the relevant angles between event-wide values: InDM and EventP, VisibleP, VisibleNoNP, etc.
         // unsure how to deal with ROOT::Math::DisplacementVector3D<Cartesian3D<Scalar> > objects right now so converting
         // to vector -- fix later. (Dane)
-        std::vector< double > Event3Vec = { Event.Px(), Event.Py(), Event.Pz() };
-        std::vector< double > Visible3Vec = { Visible.Px(), Visible.Py(), Visible.Pz() };
-        std::vector< double > VisibleNoN3Vec = { VisibleNoN.Px(), VisibleNoN.Py(), VisibleNoN.Pz() };
-        std::vector< double > LeadingParticle3Vec = { LeadingParticle.Px(), LeadingParticle.Py(), LeadingParticle.Pz() };
-        std::vector< double > LeadingParticleNoN3Vec = { LeadingParticleNoN.Px(), LeadingParticleNoN.Py(), LeadingParticleNoN.Pz() };
-        std::vector< double > LeadingProton3Vec = { LeadingProton.Px(), LeadingProton.Py(), LeadingProton.Pz() };
+        Momentum3_t EventMom3( Event.Px(), Event.Py(), Event.Pz() );
+        Momentum3_t VisibleMom3( Visible.Px(), Visible.Py(), Visible.Pz() );
+        Momentum3_t VisibleNoNMom3( VisibleNoN.Px(), VisibleNoN.Py(), VisibleNoN.Pz() );
+        Momentum3_t LeadingParticleMom3( LeadingParticle.Px(), LeadingParticle.Py(), LeadingParticle.Pz() );
+        Momentum3_t LeadingParticleNoNMom3( LeadingParticleNoN.Px(), LeadingParticleNoN.Py(), LeadingParticleNoN.Pz() );
+        Momentum3_t LeadingProtonMom3( LeadingProton.Px(), LeadingProton.Py(), LeadingProton.Pz() );
 
         ResizeKinematics( EventPx, EventPy, EventPz, EventP, EventE, EventAngle, 1 );
         ResizeKinematics( VisiblePx, VisiblePy, VisiblePz, VisibleP, VisibleE, VisibleAngle, 1 );
@@ -746,13 +862,12 @@ int main( int argc, char ** argv ) {
         ResizeKinematics( LeadingParticleNoNPx, LeadingParticleNoNPy, LeadingParticleNoNPz, LeadingParticleNoNP, LeadingParticleNoNE, LeadingParticleNoNAngle, 1 );
         ResizeKinematics( LeadingProtonPx, LeadingProtonPy, LeadingProtonPz, LeadingProtonP, LeadingProtonE, LeadingProtonAngle, 1 );
 
-        std::vector< double > InDMMom3Vec = { InDMPx[0], InDMPy[0], InDMPz[0] };
-        EventAngle[0]              = CalculateAngle( InDMMom3Vec, Event3Vec );
-        VisibleAngle[0]            = CalculateAngle( InDMMom3Vec, Visible3Vec );
-        VisibleNoNAngle[0]         = CalculateAngle( InDMMom3Vec, VisibleNoN3Vec );
-        LeadingParticleAngle[0]    = CalculateAngle( InDMMom3Vec, LeadingParticle3Vec );
-        LeadingParticleNoNAngle[0] = CalculateAngle( InDMMom3Vec, LeadingParticleNoN3Vec );
-        LeadingProtonAngle[0]      = CalculateAngle( InDMMom3Vec, LeadingProton3Vec );
+        EventAngle[0]              = CalculateAngle( SunPosition, EventMom3 );
+        VisibleAngle[0]            = CalculateAngle( SunPosition, VisibleMom3 );
+        VisibleNoNAngle[0]         = CalculateAngle( SunPosition, VisibleNoNMom3 );
+        LeadingParticleAngle[0]    = CalculateAngle( SunPosition, LeadingParticleMom3 );
+        LeadingParticleNoNAngle[0] = CalculateAngle( SunPosition, LeadingParticleNoNMom3 );
+        LeadingProtonAngle[0]      = CalculateAngle( SunPosition, LeadingProtonMom3 );
         
         // Fill the event-wide information
         EventPx[0] = Event.Px();
@@ -828,8 +943,8 @@ int main( int argc, char ** argv ) {
             ParticleE[nParticles] = SmearedMCPart.E();
             Momentum4_t thisMomentum4( ParticlePx[nParticles], ParticlePy[nParticles], ParticlePz[nParticles], ParticleE[nParticles] );
 
-            std::vector< double > ParticleP3Vec = { ParticlePx[nParticles], ParticlePy[nParticles], ParticlePz[nParticles] };
-            ParticleAngle[nParticles] = CalculateAngle( InDMMom3Vec, ParticleP3Vec );
+            Momentum3_t ParticleMom3( ParticlePx[nParticles], ParticlePy[nParticles], ParticlePz[nParticles] );
+            ParticleAngle[nParticles] = CalculateAngle( SunPosition, ParticleMom3 );
 
             ++nParticles;
             ++nSmearedVisible;
@@ -917,27 +1032,27 @@ int main( int argc, char ** argv ) {
 
         
         // Calculate the angle
-        std::vector< double > SmearedVisible3Vec = { SmearedVisible.X(), SmearedVisible.Y(), SmearedVisible.Z() };
-        std::vector< double > SmearedVisibleNoN3Vec = { SmearedVisibleNoN.X(), SmearedVisibleNoN.Y(), SmearedVisibleNoN.Z() };
-        std::vector< double > SmearedRecontable3Vec = { SmearedRecontable.X(), SmearedRecontable.Y(), SmearedRecontable.Z() };
-        std::vector< double > SmearedRecontableNoN3Vec = { SmearedRecontableNoN.X(), SmearedRecontableNoN.Y(), SmearedRecontableNoN.Z() };
-        std::vector< double > LeadingSmeared3Vec = { LeadingSmeared.X(), LeadingSmeared.Y(), LeadingSmeared.Z() };
-        std::vector< double > LeadingSmearedNoN3Vec = { LeadingSmearedNoN.X(), LeadingSmearedNoN.Y(), LeadingSmearedNoN.Z() };
-        std::vector< double > LeadingSmearedRecontable3Vec = { LeadingSmearedRecontable.X(), LeadingSmearedRecontable.Y(), LeadingSmearedRecontableNoN.Z() };
-        std::vector< double > LeadingSmearedRecontableNoN3Vec = { LeadingSmearedRecontableNoN.X(), LeadingSmearedRecontableNoN.Y(), LeadingSmearedRecontable.Z() };
-        std::vector< double > LeadingSmearedProton3Vec = { LeadingSmearedProton.X(), LeadingSmearedProton.Y(), LeadingSmearedProton.Z() };
-        std::vector< double > LeadingSmearedRecontableProton3Vec = { LeadingSmearedRecontableProton.X(), LeadingSmearedRecontableProton.Y(), LeadingSmearedRecontableProton.Z() };
+        Momentum3_t SmearedVisibleMom3( SmearedVisible.X(), SmearedVisible.Y(), SmearedVisible.Z() );
+        Momentum3_t SmearedVisibleNoNMom3( SmearedVisibleNoN.X(), SmearedVisibleNoN.Y(), SmearedVisibleNoN.Z() );
+        Momentum3_t SmearedRecontableMom3( SmearedRecontable.X(), SmearedRecontable.Y(), SmearedRecontable.Z() );
+        Momentum3_t SmearedRecontableNoNMom3( SmearedRecontableNoN.X(), SmearedRecontableNoN.Y(), SmearedRecontableNoN.Z() );
+        Momentum3_t LeadingSmearedMom3( LeadingSmeared.X(), LeadingSmeared.Y(), LeadingSmeared.Z() );
+        Momentum3_t LeadingSmearedNoNMom3( LeadingSmearedNoN.X(), LeadingSmearedNoN.Y(), LeadingSmearedNoN.Z() );
+        Momentum3_t LeadingSmearedRecontableMom3( LeadingSmearedRecontable.X(), LeadingSmearedRecontable.Y(), LeadingSmearedRecontableNoN.Z() );
+        Momentum3_t LeadingSmearedRecontableNoNMom3( LeadingSmearedRecontableNoN.X(), LeadingSmearedRecontableNoN.Y(), LeadingSmearedRecontable.Z() );
+        Momentum3_t LeadingSmearedProtonMom3( LeadingSmearedProton.X(), LeadingSmearedProton.Y(), LeadingSmearedProton.Z() );
+        Momentum3_t LeadingSmearedRecontableProtonMom3( LeadingSmearedRecontableProton.X(), LeadingSmearedRecontableProton.Y(), LeadingSmearedRecontableProton.Z() );
         
-        SmearedVisibleAngle[0] = CalculateAngle( InDMMom3Vec, SmearedVisible3Vec );
-        SmearedVisibleNoNAngle[0] = CalculateAngle( InDMMom3Vec, SmearedVisibleNoN3Vec );
-        SmearedRecontableAngle[0] = CalculateAngle( InDMMom3Vec, SmearedRecontable3Vec );
-        SmearedRecontableNoNAngle[0] = CalculateAngle( InDMMom3Vec, SmearedRecontableNoN3Vec );
-        LeadingSmearedAngle[0] = CalculateAngle( InDMMom3Vec, LeadingSmeared3Vec );
-        LeadingSmearedNoNAngle[0] = CalculateAngle( InDMMom3Vec, LeadingSmearedNoN3Vec );
-        LeadingSmearedRecontableAngle[0] = CalculateAngle( InDMMom3Vec, LeadingSmearedRecontable3Vec );
-        LeadingSmearedRecontableNoNAngle[0] = CalculateAngle( InDMMom3Vec, LeadingSmearedRecontableNoN3Vec );
-        LeadingSmearedProtonAngle[0] = CalculateAngle( InDMMom3Vec, LeadingSmearedProton3Vec );
-        LeadingSmearedRecontableProtonAngle[0] = CalculateAngle( InDMMom3Vec, LeadingSmearedRecontableProton3Vec );
+        SmearedVisibleAngle[0] = CalculateAngle( SunPosition, SmearedVisibleMom3 );
+        SmearedVisibleNoNAngle[0] = CalculateAngle( SunPosition, SmearedVisibleNoNMom3 );
+        SmearedRecontableAngle[0] = CalculateAngle( SunPosition, SmearedRecontableMom3 );
+        SmearedRecontableNoNAngle[0] = CalculateAngle( SunPosition, SmearedRecontableNoNMom3 );
+        LeadingSmearedAngle[0] = CalculateAngle( SunPosition, LeadingSmearedMom3 );
+        LeadingSmearedNoNAngle[0] = CalculateAngle( SunPosition, LeadingSmearedNoNMom3 );
+        LeadingSmearedRecontableAngle[0] = CalculateAngle( SunPosition, LeadingSmearedRecontableMom3 );
+        LeadingSmearedRecontableNoNAngle[0] = CalculateAngle( SunPosition, LeadingSmearedRecontableNoNMom3 );
+        LeadingSmearedProtonAngle[0] = CalculateAngle( SunPosition, LeadingSmearedProtonMom3 );
+        LeadingSmearedRecontableProtonAngle[0] = CalculateAngle( SunPosition, LeadingSmearedRecontableProtonMom3 );
 
         
         SmearedVisiblePx[0] = SmearedVisible.X();
@@ -1005,6 +1120,10 @@ int main( int argc, char ** argv ) {
         
         fTree->Fill();
     } // End of an event
+
     fOut->Write();
+    
+    std::cout << "Number of events in 10k ton volume: " << nIn10kton << std::endl;
+
     return 0;
 }
