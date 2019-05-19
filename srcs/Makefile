@@ -33,12 +33,9 @@ LDFLAGS=$$(root-config --libs) \
         -L $(LARCOREALG_LIB) -l larcorealg_Geometry \
         -L $(BOOSTEDDMANALYSIS_LIB) -l boosteddmanalysis_DataObjects
 
-all: MCTruthDistributions MCParticleDistributions CheckMCTruthMCParticle MCDistributions BkgdDistributions
+all: CheckMCTruthMCParticle MCDistributions
 
 MCTruthDistributions: MCTruthDistributions.cc
-	@$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -o $@ $<
-
-MCParticleDistributions: MCParticleDistributions.cc
 	@$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -o $@ $<
 
 CheckMCTruthMCParticle: CheckMCTruthMCParticle.cc
@@ -49,6 +46,5 @@ MCDistributions: MCDistributions.cc
 
 BlgdDistributions: BkgdDistributions.cc
 	@$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -o $@ $<
-
 	
-clean: rm *.o MCTruthDistributions MCParticleDistributions CheckMCTruthMCParticle MCDistributions BkgdDistributions
+clean: rm *.o MCTruthDistributions CheckMCTruthMCParticle MCDistributions BkgdDistributions
