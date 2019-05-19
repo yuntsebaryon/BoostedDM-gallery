@@ -33,7 +33,7 @@ int main( int argc, char ** argv ) {
     std::vector< std::string > Filenames;
     Filenames.push_back( argv[1] );
 
-    std::string GenLabel = "gsimple";
+    std::string GenLabel = "dk2nu";
     std::string G4Label = "largeant";
     art::InputTag MCTruthTag { GenLabel };
     art::InputTag MCParticleTag { G4Label };
