@@ -164,12 +164,12 @@ double CalculateAngle( Momentum3_t v1, Momentum3_t v2 ) {
   return acos( cosTheta );
 }
 
-void InitTree( TTree* pTree, CounterMap_t& Multiplicity, KinematicMap_t& Px, KinematicMap_t& Py, KinematicMap_t& Pz, KinematicMap_t& P, KinematicMap_t& E, KinematicMap_t& Angle, int& run, int& event, simb::Origin_t& EventOrigin, int& Mode, int& InteractionType, int& CCNC, int& isIn10kton, double& SunPx, double& SunPy, double& SunPz, double& VtxX, double& VtxY, double& VtxZ, double& T0 ) {
+void InitTree( TTree* pTree, CounterMap_t& Multiplicity, KinematicMap_t& Px, KinematicMap_t& Py, KinematicMap_t& Pz, KinematicMap_t& P, KinematicMap_t& E, KinematicMap_t& Angle, int& run, int& eventNo, simb::Origin_t& EventOrigin, int& Mode, int& InteractionType, int& CCNC, int& isIn10kton, double& SunPx, double& SunPy, double& SunPz, double& VtxX, double& VtxY, double& VtxZ, double& T0 ) {
 
     ResetCounters( Multiplicity, Px, Py, Pz, P, E, Angle, SunPx, SunPy, SunPz, VtxX, VtxY, VtxZ, T0 );
 
     pTree->Branch( "Run", &run );
-    pTree->Branch( "Event", &event );
+    pTree->Branch( "Event", &eventNo );
     
     // Event origin: neutrino, cosmics, etc.
     pTree->Branch( "EventOrigin", &EventOrigin );
@@ -348,7 +348,7 @@ void InitTree( TTree* pTree, CounterMap_t& Multiplicity, KinematicMap_t& Px, Kin
     pTree->Branch( "Ar39Px", &Px[1000180390] );
     pTree->Branch( "Cl39Px", &Px[1000170390] );
     pTree->Branch( "InParticlePx", &Px[-2000010000] );
-    pTree->Branch( "OutPariclePx", &Px[2000010000] );
+    pTree->Branch( "OutParticlePx", &Px[2000010000] );
     pTree->Branch( "GENIEPx", &Px[2000000000] );
     pTree->Branch( "SmearedProtonPx", &Px[-2212] );
     pTree->Branch( "SmearedNeutronPx", &Px[-2112] );
@@ -516,11 +516,11 @@ int main( int argc, char ** argv ) {
     CounterMap_t Multiplicity;
     KinematicMap_t Px, Py, Pz, P, E, Angle;
     simb::Origin_t EventOrigin;
-    int run, event, Mode, InteractionType, CCNC, isIn10kton;
+    int run, eventNo, Mode, InteractionType, CCNC, isIn10kton;
     double SunPx, SunPy, SunPz, VtxX, VtxY, VtxZ, T0;
     int nIn10kton = 0;
     
-    InitTree( fTree, Multiplicity, Px, Py, Pz, P, E, Angle, run, event, EventOrigin, Mode, InteractionType, CCNC, isIn10kton, SunPx, SunPy, SunPz, VtxX, VtxY, VtxZ, T0 );
+    InitTree( fTree, Multiplicity, Px, Py, Pz, P, E, Angle, run, eventNo, EventOrigin, Mode, InteractionType, CCNC, isIn10kton, SunPx, SunPy, SunPz, VtxX, VtxY, VtxZ, T0 );
 
     // Random engine for picking an entry for the sun position
     int RandMax = SunPositions.size();
@@ -532,11 +532,11 @@ int main( int argc, char ** argv ) {
         // for ( auto& multPair: Multiplicity ) multPair.second = 0;
         ResetCounters( Multiplicity, Px, Py, Pz, P, E, Angle, SunPx, SunPy, SunPz, VtxX, VtxY, VtxZ, T0 );
         run = ev.eventAuxiliary().run();
-        event = ev.eventAuxiliary().event();
+        eventNo = ev.eventAuxiliary().event();
         
         std::cout << "Processing "
                   << "Run " << run << ", "
-                  << "Event " << event << std::endl;
+                  << "Event " << eventNo << std::endl;
 
         // In the background events, the sun position should be the same in the entire events.
         // It should be the same for the signal events as well, but we obtain the sun position of the signal BDM events from the incoming direction of the BDM, and therefore will be filled later.
@@ -718,7 +718,6 @@ int main( int argc, char ** argv ) {
                 }
 
                 const auto Momentum = geo::vect::convertTo< Momentum4_t >( thisMCParticle->Momentum() );
-                if ( Momentum.P() < 0.25 ) continue;
                 Event += Momentum;
 
                 if ( pdgCode > 2000000000 && pdgCode < 2000000301 ) {
@@ -799,7 +798,7 @@ int main( int argc, char ** argv ) {
                     ++nAllParticles;
 
                 } else {
-
+                  
                     auto& nParticles = Multiplicity[abs(pdgCode)];
                     auto& ParticlePx = Px[abs(pdgCode)]; auto& ParticlePy = Py[abs(pdgCode)];
                     auto& ParticlePz = Pz[abs(pdgCode)]; auto& ParticleP = P[abs(pdgCode)];
